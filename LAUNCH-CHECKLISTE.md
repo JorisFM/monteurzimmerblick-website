@@ -35,7 +35,7 @@ Soll später ein professionell produziertes Video die Animation ersetzen: MP4 un
 - [ ] **Impressum:** HRB-Nummer, USt-IdNr., Telefonnummer (gelb markierte Felder).
 - [ ] **Datenschutz:** Hosting-Anbieter und Speicherdauer der Logfiles (gelb markierte Felder). Rechtliche Prüfung empfohlen.
 - [ ] **E-Mail-Adresse:** `kontakt@monteurzimmerblick.de` ist als Kontaktadresse eingetragen. Postfach anlegen oder Adresse in allen drei HTML-Dateien ersetzen.
-- [ ] **Plattform-Gebühr:** Die Seite nennt „10 % pro verkauftem Lead, keine Grundgebühr". Die ältere technische Spezifikation nannte 6 % je Seite. Vor Launch final abstimmen; Stellen: Preise-Sektion, Rechner in `main.js` (Konstante `FEE`), FAQ und JSON-LD in `index.html`.
+- [ ] **Plattform-Gebühr:** Die Seite nennt „10 % pro verkauftem Lead, keine Grundgebühr". Die ältere technische Spezifikation nannte 6 % je Seite. Vor Launch final abstimmen; Stellen: FAQ und JSON-LD in `index.html` (die Preise-Sektion nennt keine Prozentzahl mehr; der Rendite-Rechner in `site.js` rechnet mit 200 € pro vermitteltem Kunden).
 - [ ] **App-Links:** Buttons verweisen auf `https://app.monteurzimmerblick.de/register` und `/login`. Prüfen, ob die Routen so heißen. Sonst in allen drei HTML-Dateien anpassen.
 - [ ] **SSL der App:** Am 16.09.2026 lieferte `app.monteurzimmerblick.de` ein Zertifikat, das nicht auf die Domain ausgestellt ist (Browser warnen). Marco muss ein passendes Zertifikat einspielen, sonst laufen alle CTAs ins Leere.
 - [ ] **Hauptdomain:** `monteurzimmerblick.de` zeigt aktuell auf eine Apache-Standardseite (Strato). DNS bzw. Webspace für die Website einrichten.

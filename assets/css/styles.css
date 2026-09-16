@@ -372,6 +372,11 @@ strong, b { font-weight: 600; }
 .calc-out div.total { border-bottom: 0; }
 .calc-out div.total dt { color: var(--ink); font-weight: 600; }
 .calc-out div.total dd { font-family: var(--ff-tight); font-weight: 800; font-size: 2rem; letter-spacing: -.02em; line-height: 1; }
+.calc-result { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.calc-label { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.calc-big { font-family: var(--ff-tight); font-weight: 800; font-size: clamp(1.6rem, 2.6vw, 2.1rem); letter-spacing: -.03em; line-height: 1.05; }
+.calc-big b { font-size: 1.55em; color: var(--gelb-text); font-weight: 800; }
+.calc-sub { color: var(--ink-2); }
 .calc-note { margin-top: 12px; font-size: .85rem; color: var(--ink-3); }
 @media (max-width: 860px) { .price-grid { grid-template-columns: 1fr; } }
 

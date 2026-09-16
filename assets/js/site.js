@@ -11,6 +11,21 @@
     track.dataset.cloned = '1';
   }
 
+  /* Rendite-Rechner: Kunden pro Jahr × 200 € durchschnittliches Extraeinkommen */
+  var kunden = d.getElementById('kunden');
+  if (kunden) {
+    var kOut = d.getElementById('kunden-out'), extra = d.getElementById('extra'), PRO_KUNDE = 200;
+    var upd = function () {
+      var n = Number(kunden.value);
+      kOut.textContent = n;
+      extra.textContent = (n * PRO_KUNDE).toLocaleString('de-DE') + ' €';
+      kunden.style.setProperty('--pct', ((n - kunden.min) / (kunden.max - kunden.min) * 100) + '%');
+      kunden.setAttribute('aria-valuetext', n + ' Kunden, bis zu ' + (n * PRO_KUNDE).toLocaleString('de-DE') + ' Euro');
+    };
+    kunden.addEventListener('input', upd);
+    upd();
+  }
+
   /* Erklärvideo: eigene Seite (erklaervideo.html) wird beim Klick in den Rahmen geladen */
   var frame = d.querySelector('.video-frame');
   if (!frame) return;
