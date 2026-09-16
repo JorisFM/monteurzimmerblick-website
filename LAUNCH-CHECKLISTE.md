@@ -26,7 +26,7 @@ Zwei Formen:
 - **Web-Animation** `erklaervideo.html` (im Root): zeitgesteuerte HTML-Animation mit Sprecherstimme (`assets/video/voice/s1.mp3` bis `s8.mp3`, KI-Stimme über Gemini TTS, Stimme „Charon") und Hintergrundmusik (`assets/video/music.mp3`, KI-generiert). Der Play-Button in `index.html` lädt diese Seite in den Player. Auch direkt aufrufbar, z. B. für WhatsApp-Links. Sprechertext, Szenenlängen (`DUR`-Array) und Einsatzzeiten (`--d`) stehen in der Datei.
 - **MP4** `assets/video/erklaervideo.mp4` (1920×1200, H.264 + AAC, 30 fps) für Social Media, YouTube oder Messenger. Neu rendern nach Änderungen: puppeteer-core rendert die Frames über `?export=1` und `window.__render(t)`, ffmpeg (aus dem Python-Paket imageio-ffmpeg) mischt Stimme und Musik. Die Skripte lagen im Session-Scratchpad (`export/render.js`, `export/mux.sh`).
 
-Die erste, technischere Fassung liegt als Sicherung unter `assets/video/voice-v1/` (Clips); die alte HTML-Fassung wurde ersetzt.
+Die erste, technischere Fassung wurde verworfen.
 
 Soll später ein professionell produziertes Video die Animation ersetzen: MP4 unter `assets/video/erklaervideo.mp4` ablegen und in `index.html` das `div.video-embed` gegen ein `<video>`-Element tauschen (`assets/js/site.js` entsprechend anpassen).
 
