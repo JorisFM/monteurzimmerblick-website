@@ -23,12 +23,12 @@ Das Erklärvideo erzählt die Geschichte aus Sicht des Vermieters (acht Szenen, 
 
 Zwei Formen:
 
-- **Web-Animation** `erklaervideo.html` (im Root): zeitgesteuerte HTML-Animation mit Sprecherstimme (`assets/video/voice/s1.mp3` bis `s8.mp3`, KI-Stimme über Gemini TTS, Stimme „Charon") und Hintergrundmusik (`assets/video/music.mp3`, KI-generiert). Der Play-Button in `index.html` lädt diese Seite in den Player. Auch direkt aufrufbar, z. B. für WhatsApp-Links. Sprechertext, Szenenlängen (`DUR`-Array) und Einsatzzeiten (`--d`) stehen in der Datei.
+- **Web-Animation** `erklaervideo.html` (im Root): zeitgesteuerte HTML-Animation mit Sprecherstimme (`assets/video/voice/s1.mp3` bis `s8.mp3`, KI-Stimme über Gemini TTS, Stimme „Charon") und Hintergrundmusik (`assets/video/music.mp3`, KI-generiert). Sie ist die Quelle für die MP4 und direkt aufrufbar, der Player auf der Startseite nutzt sie aber nicht. Sprechertext, Szenenlängen (`DUR`-Array) und Einsatzzeiten (`--d`) stehen in der Datei.
 - **MP4** `assets/video/erklaervideo.mp4` (1920×1200, H.264 + AAC, 30 fps) für Social Media, YouTube oder Messenger. Neu rendern nach Änderungen: puppeteer-core rendert die Frames über `?export=1` und `window.__render(t)`, ffmpeg (aus dem Python-Paket imageio-ffmpeg) mischt Stimme und Musik. Die Skripte lagen im Session-Scratchpad (`export/render.js`, `export/mux.sh`).
 
 Die erste, technischere Fassung wurde verworfen.
 
-Soll später ein professionell produziertes Video die Animation ersetzen: MP4 unter `assets/video/erklaervideo.mp4` ablegen und in `index.html` das `div.video-embed` gegen ein `<video>`-Element tauschen (`assets/js/site.js` entsprechend anpassen).
+Der Player in `index.html` spielt die fertige Datei `assets/video/erklaervideo.mp4` (Bild, Stimme und Musik in einer Spur, dadurch synchron auf Handy und Desktop). Nach Änderungen an der Animation muss die MP4 neu gerendert werden. Ein neues Video einfach unter demselben Namen ablegen.
 
 ## Vor dem Livegang ergänzen
 

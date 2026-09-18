@@ -26,23 +26,28 @@
     upd();
   }
 
-  /* Erklärvideo: eigene Seite (erklaervideo.html) wird beim Klick in den Rahmen geladen */
+  /* Erklärvideo: eine einzige MP4-Datei, Bild, Stimme und Musik sind fest gemischt.
+     Dadurch bleibt alles synchron, auch auf dem Handy. */
   var frame = d.querySelector('.video-frame');
   if (!frame) return;
   var overlay = frame.querySelector('.video-overlay');
-  var embed = frame.querySelector('.video-embed');
-  if (!overlay || !embed) return;
+  var video = frame.querySelector('video');
+  var note = frame.querySelector('.video-note');
+  if (!overlay || !video) return;
 
   overlay.addEventListener('click', function () {
-    if (embed.querySelector('iframe')) return;
-    var f = d.createElement('iframe');
-    f.src = embed.dataset.src;
-    f.title = 'Erklärvideo: So funktioniert Monteurzimmerblick';
-    f.setAttribute('allow', 'autoplay; fullscreen');
-    f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#0E0E0D';
-    embed.appendChild(f);
     overlay.classList.add('hidden');
-    var poster = frame.querySelector('img');
-    if (poster) poster.style.display = 'none';
+    video.controls = true;
+    var p = video.play();
+    if (p && p.catch) p.catch(function () {
+      if (note) { note.textContent = 'Tippen Sie auf Play, um das Video zu starten.'; note.classList.add('show'); }
+    });
+  });
+  video.addEventListener('play', function () { if (note) note.classList.remove('show'); });
+  video.addEventListener('ended', function () {
+    video.controls = false;
+    try { video.currentTime = 0; } catch (e) {}
+    video.load();
+    overlay.classList.remove('hidden');
   });
 })();
