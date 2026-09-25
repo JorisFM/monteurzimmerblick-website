@@ -1,6 +1,6 @@
 # Monteurzimmerblick – Website: Launch-Checkliste
 
-Statische Website, kein Build-Schritt. Alle Dateien in diesem Ordner auf den Webspace von `monteurzimmerblick.de` laden (Root). Lokal testen mit `python3 -m http.server 8765` und `http://localhost:8765`.
+Statische Website, kein Build-Schritt. Alle Dateien in diesem Ordner auf den Webspace von `monteurzimmerblick.de` laden (Root), außer `werkzeuge/`. Lokal testen mit `python3 -m http.server 8765` und `http://localhost:8765`.
 
 ## Dateien
 
@@ -13,22 +13,21 @@ Statische Website, kein Build-Schritt. Alle Dateien in diesem Ordner auf den Web
 | `assets/js/main.js`, `assets/js/site.js` | Navigation, Scroll-Reveal, Gebührenrechner, Routen-Animation, Ticker, Video-Player |
 | `assets/fonts/` | Selbst gehostete Schriften (Inter, Inter Tight, IBM Plex Mono; OFL) |
 | `assets/img/mascot.svg` | Maskottchen (Vektor) |
+| `erklaervideo.html`, `assets/video/` | Erklärvideo (Quelle, MP4, Ton) |
 | `assets/img/og.png` | Vorschaubild für Social Media / Messenger (1200×630) |
 | `favicon.svg`, `apple-touch-icon.png` | Icons |
 | `robots.txt`, `sitemap.xml` | SEO |
 
 ## Erklärvideo
 
-Das Erklärvideo erzählt die Geschichte aus Sicht des Vermieters (acht Szenen, ca. 105 s): zufriedener Kunde fragt nach Hamburg, ohne Monteurzimmerblick endet hier die Reise, mit Monteurzimmerblick wird er an einen Partner vermittelt und der Vermieter verdient daran, jeder ausziehende Kunde wird zur Einnahme, Leerstand füllen, Kunden werden von Stadt zu Stadt empfohlen, kurzer Vertrauenshinweis, Aufruf. Technik (Gebühren, Stripe, Prüfzeitraum) bewusst nur am Rande.
+Das Erklärvideo (ca. 56 s, Motion Graphics im Stil der Seite) erzählt die Geschichte von Herrn Berger, Vermieter in Magdeburg: Sein Kunde zieht zur nächsten Baustelle nach Hamburg, früher war die Anfrage damit weg. Heute gibt er sie über Monteurzimmerblick an eine geprüfte Vermieterin in Hamburg weiter und verdient mit, ohne neues Zimmer. Umgekehrt kauft er Anfragen aus seiner Stadt und füllt Leerstand. Zum Schluss: kostenlos starten auf monteurzimmerblick.de. Keine Preise, keine Fachbegriffe.
 
-Zwei Formen:
+- **MP4** `assets/video/erklaervideo.mp4` (1920×1080, 60 fps, H.264 + AAC, ca. 10 MB). Der Player in `index.html` spielt diese Datei (Bild, Stimme, Musik und Geräusche in einer Spur). Vorschaubild: `assets/img/video-poster.png`.
+- **Quelle** `erklaervideo.html` (im Root, `noindex`): pausierte GSAP-Timeline (Bibliothek in `assets/video/lib/`), Figuren und Szenen als SVG. Die Timeline richtet sich nach den Wortzeiten der Sprecheraufnahme (`WORDS`, `VO_SEGS`). Direkt im Browser aufrufbar, spielt dann den Ton aus der MP4.
+- **Ton** `assets/video/sprecher.mp3` (eine Aufnahme, Gemini TTS, Stimme „Charon“, wird in Sätze geschnitten) und `assets/video/musik.mp3` (ElevenLabs Music, passend zum Schnitt komponiert). Die Geräusche entstehen beim Mischen.
+- **Neu bauen** mit `werkzeuge/erklaervideo/baue.sh` (Anleitung im Skript): rendert alle Bilder über Chrome, mischt den Ton auf -16 LUFS und schreibt MP4 und Vorschaubild. Einzelne Standbilder zum Prüfen: `node werkzeuge/erklaervideo/stills.js 12.5 30`.
 
-- **Web-Animation** `erklaervideo.html` (im Root): zeitgesteuerte HTML-Animation mit Sprecherstimme (`assets/video/voice/s1.mp3` bis `s8.mp3`, KI-Stimme über Gemini TTS, Stimme „Charon") und Hintergrundmusik (`assets/video/music.mp3`, KI-generiert). Sie ist die Quelle für die MP4 und direkt aufrufbar, der Player auf der Startseite nutzt sie aber nicht. Sprechertext, Szenenlängen (`DUR`-Array) und Einsatzzeiten (`--d`) stehen in der Datei.
-- **MP4** `assets/video/erklaervideo.mp4` (1920×1200, H.264 + AAC, 30 fps) für Social Media, YouTube oder Messenger. Neu rendern nach Änderungen: puppeteer-core rendert die Frames über `?export=1` und `window.__render(t)`, ffmpeg (aus dem Python-Paket imageio-ffmpeg) mischt Stimme und Musik. Die Skripte lagen im Session-Scratchpad (`export/render.js`, `export/mux.sh`).
-
-Die erste, technischere Fassung wurde verworfen.
-
-Der Player in `index.html` spielt die fertige Datei `assets/video/erklaervideo.mp4` (Bild, Stimme und Musik in einer Spur, dadurch synchron auf Handy und Desktop). Nach Änderungen an der Animation muss die MP4 neu gerendert werden. Ein neues Video einfach unter demselben Namen ablegen.
+Der Ordner `werkzeuge/` gehört nicht auf den Webspace.
 
 ## Vor dem Livegang ergänzen
 
@@ -43,6 +42,5 @@ Der Player in `index.html` spielt die fertige Datei `assets/video/erklaervideo.m
 
 ## Optional nach Launch
 
-- Erklärvideo (Igor wünscht sich eines) in den Hero-Bereich oder unter „So funktioniert es" einbinden.
 - Englische Version der Landingpage, sobald die Plattform mehrsprachig läuft.
 - Backlinks setzen, Search Console anmelden, `sitemap.xml` einreichen.

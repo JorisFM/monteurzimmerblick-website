@@ -174,7 +174,7 @@ strong, b { font-weight: 600; }
 .video-bar .dots i { width: 10px; height: 10px; border-radius: 50%; }
 .video-bar .dots i:nth-child(1) { background: #FF5F57; } .video-bar .dots i:nth-child(2) { background: #FEBC2E; } .video-bar .dots i:nth-child(3) { background: #28C840; }
 .video-bar .url { font-family: var(--ff-mono); font-size: .72rem; color: var(--ink-3); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: .45em .9em; letter-spacing: .02em; }
-.video-frame { position: relative; aspect-ratio: 16 / 10; background: linear-gradient(180deg, #F3F3F0 0%, #C8C8C3 100%); }
+.video-frame { position: relative; aspect-ratio: 16 / 9; background: linear-gradient(180deg, #F3F3F0 0%, #C8C8C3 100%); }
 .video-frame video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: var(--ink); }
 .video-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 

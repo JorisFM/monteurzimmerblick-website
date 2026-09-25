@@ -3,492 +3,1046 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Erklärvideo – Mehr aus jedem Kunden mit Monteurzimmerblick</title>
-  <meta name="description" content="In anderthalb Minuten erklärt: Wie Vermieter von Monteurzimmern aus jedem Kunden mehr machen.">
+  <title>Erklärvideo – Monteurzimmerblick</title>
+  <meta name="description" content="In einer Minute erklärt: Wie Vermieter von Monteurzimmern mit ihren Kunden zusätzlich verdienen.">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#0E0E0D">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/fonts/fonts.css">
+  <!--
+    Quelle des Erklärvideos (Motion Graphics, 1920×1080, ca. 55 s).
+    Die Animation ist eine pausierte GSAP-Timeline und wird bildgenau gerendert:
+    ?export=1 blendet die Steuerung aus, window.__render(t) setzt jedes Bild.
+    Sprecher: assets/video/sprecher.mp3 (eine Aufnahme, per VO_SEGS geschnitten).
+    Die fertige Datei mit Ton ist assets/video/erklaervideo.mp4.
+  -->
   <style>
-    /* ===== Player-Rahmen ===== */
-    :root { --gelb: #F5B800; --gelb-text: #D99B00; --gelb-soft: #FFE27A; --gelb-pale: #FFF6D0; --ink: #0E0E0D; --ink-2: #4A4A46; --ink-3: #7A7A74; --line: #E4E4DF; --bg: #F6F6F3; --green: #1F8F4E; --ff: 'Inter', system-ui, sans-serif; --ff-tight: 'Inter Tight', 'Inter', sans-serif; --ff-mono: 'IBM Plex Mono', monospace; }
+    :root { --gelb: #F5B800; --ink: #0E0E0D; --bg: #F6F6F3; --ff: 'Inter', system-ui, sans-serif; --ff-tight: 'Inter Tight', 'Inter', sans-serif; --ff-mono: 'IBM Plex Mono', monospace; }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; background: #0E0E0D; font-family: var(--ff); color: var(--ink); }
     body { display: grid; place-items: center; overflow: hidden; }
-    .player { position: relative; width: 100%; height: 100%; display: grid; place-items: center; background: #0E0E0D; }
-    .viewport { position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 100%; max-width: calc(100vh * 1.6); overflow: hidden; background: var(--bg); }
-    .stage { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; transform-origin: 0 0; overflow: hidden; background: var(--bg); }
-    .stage::before { content: ""; position: absolute; width: 900px; height: 900px; border-radius: 50%; left: 60%; top: -40%; background: radial-gradient(closest-side, rgba(245,184,0,.22), transparent 72%); }
-    .stage::after { content: ""; position: absolute; width: 700px; height: 700px; border-radius: 50%; left: -25%; top: 55%; background: radial-gradient(closest-side, rgba(245,184,0,.14), transparent 72%); }
+    .player { position: relative; width: 100vw; height: 100vh; display: grid; place-items: center; }
+    .viewport { position: relative; width: min(100vw, 177.78vh); aspect-ratio: 16 / 9; overflow: hidden; background: var(--bg); }
+    .stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: var(--bg); }
+    .layer { position: absolute; inset: 0; width: 1920px; height: 1080px; visibility: hidden; }
+    .layer > svg, .cam > svg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+    .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+    svg text { font-family: var(--ff-tight); font-weight: 800; letter-spacing: -.02em; }
+    svg .mono { font-family: var(--ff-mono); font-weight: 500; letter-spacing: 0; }
+    svg .ui { font-family: var(--ff); font-weight: 600; letter-spacing: 0; }
 
-    /* ===== Steuerung ===== */
-    .cover { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(14,14,13,.35); border: 0; cursor: pointer; padding: 0; }
-    .cover .play { width: 96px; height: 96px; border-radius: 50%; background: var(--gelb); display: grid; place-items: center; box-shadow: 0 0 0 16px rgba(255,255,255,.35), 0 24px 50px -10px rgba(0,0,0,.5); transition: transform .2s; }
-    .cover:hover .play { transform: scale(1.06); }
-    .cover .play svg { width: 34px; height: 34px; margin-left: 5px; }
-    .cover .lbl { position: absolute; bottom: 12%; left: 0; right: 0; text-align: center; color: #fff; font-weight: 600; font-size: 20px; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
-    .cover.hidden { display: none; }
-    .bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 15; display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: linear-gradient(transparent, rgba(14,14,13,.72)); color: #fff; opacity: 0; transition: opacity .25s; font-size: 13px; font-variant-numeric: tabular-nums; }
-    .player:hover .bar, .player.paused .bar, .player:focus-within .bar { opacity: 1; }
-    .bar button { width: 36px; height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; cursor: pointer; display: grid; place-items: center; padding: 0; }
-    .bar button:hover { background: rgba(255,255,255,.26); }
-    .bar button svg { width: 18px; height: 18px; }
-    .bar .prog { flex: 1; height: 26px; display: flex; align-items: center; cursor: pointer; }
+    /* Einblendungen (Bildschirmebene, unabhängig von der Kamera) */
+    .cap { position: absolute; font-family: var(--ff-tight); font-weight: 800; letter-spacing: -.035em; line-height: 1.02; color: var(--ink); white-space: nowrap; }
+    .cap .ln { display: block; }
+    .cap .m { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .04em .24em; margin: 0 -.04em -.24em; }
+    .cap .w { display: inline-block; }
+    .cap .hl { position: relative; }
+    .cap .hl::before { content: ""; position: absolute; left: -.08em; right: -.08em; bottom: .08em; height: .42em; background: var(--gelb); z-index: -1; transform-origin: 0 50%; transform: scaleX(var(--hl, 0)); }
+    #caps { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+    .wipe { z-index: 11; position: absolute; top: -200px; height: 1480px; width: 2600px; background: var(--gelb); left: 2000px; transform: skewX(-12deg); visibility: hidden; }
+    .wipe.ink { background: var(--ink); }
+    .cover-sq { z-index: 12; position: absolute; left: 910px; top: 490px; width: 100px; height: 100px; border-radius: 20px; background: var(--gelb); visibility: hidden; }
+
+    /* Steuerung für die Vorschau im Browser */
+    .play-cover { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(14,14,13,.28); border: 0; cursor: pointer; padding: 0; }
+    .play-cover span { width: 96px; height: 96px; border-radius: 50%; background: var(--gelb); display: grid; place-items: center; box-shadow: 0 0 0 16px rgba(255,255,255,.35); }
+    .play-cover svg { width: 34px; height: 34px; margin-left: 5px; }
+    .play-cover.hidden { display: none; }
+    .bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 15; display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: linear-gradient(transparent, rgba(14,14,13,.7)); color: #fff; font-size: 13px; font-variant-numeric: tabular-nums; opacity: 0; transition: opacity .25s; }
+    .player:hover .bar, .player.paused .bar { opacity: 1; }
+    .bar button { width: 36px; height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.16); color: #fff; cursor: pointer; font: inherit; }
+    .bar .prog { flex: 1; height: 24px; display: flex; align-items: center; cursor: pointer; }
     .bar .prog i { display: block; width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.25); position: relative; overflow: hidden; }
-    .bar .prog b { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--gelb); }
-    .bar .time { min-width: 86px; text-align: center; }
-    .ic-pause { display: none; }
-    .player.playing .ic-play { display: none; }
-    .player.playing .ic-pause { display: block; }
-    .ic-unmute { display: none; }
-    .player.muted .ic-mute { display: none; }
-    .player.muted .ic-unmute { display: block; }
-    .export .bar, .export .cover { display: none !important; }
-
-    /* ===== Szenen-Engine ===== */
-    .scene { position: absolute; inset: 0; display: none; }
-    .scene.on { display: block; }
-    .stage * { animation-play-state: paused !important; animation-fill-mode: both !important; }
-    .a { animation-duration: var(--dur, .7s); animation-timing-function: cubic-bezier(.2, .8, .2, 1); animation-delay: var(--d, 0s); }
-    .a-fade { animation-name: fade; }
-    .a-up { animation-name: up; }
-    .a-pop { animation-name: pop; animation-timing-function: cubic-bezier(.34, 1.56, .64, 1); }
-    .a-left { animation-name: fromLeft; }
-    .a-right { animation-name: fromRight; }
-    .a-out { animation-name: out; }
-    .a-leave { animation-name: leave; animation-duration: 1.1s; animation-timing-function: cubic-bezier(.5, 0, .8, .4); }
-    .a-grey { animation-name: grey; }
-    .a-ring { animation-name: ring; animation-duration: 1.2s; animation-timing-function: ease-in-out; }
-    .a-press { animation-name: press; animation-duration: .5s; }
-    .a-grow { animation-name: grow; animation-duration: .9s; }
-    .a-fly { animation-name: fly; animation-duration: 1.4s; animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
-    .a-light { animation-name: light; animation-duration: .5s; }
-    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes up { from { opacity: 0; transform: translateY(34px); } to { opacity: 1; transform: none; } }
-    @keyframes pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: scale(1); } }
-    @keyframes fromLeft { from { opacity: 0; transform: translateX(-120px); } to { opacity: 1; transform: none; } }
-    @keyframes fromRight { from { opacity: 0; transform: translateX(120px); } to { opacity: 1; transform: none; } }
-    @keyframes out { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
-    @keyframes leave { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(360px); } }
-    @keyframes grey { from { filter: grayscale(0); opacity: 1; } to { filter: grayscale(1); opacity: .4; } }
-    @keyframes ring { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(-16deg); } 30% { transform: rotate(14deg); } 45% { transform: rotate(-10deg); } 60% { transform: rotate(8deg); } 75% { transform: rotate(-4deg); } }
-    @keyframes press { 0% { transform: scale(1); } 40% { transform: scale(.9); } 100% { transform: scale(1); } }
-    @keyframes grow { from { transform: scaleY(0); opacity: .5; } to { transform: scaleY(1); opacity: 1; } }
-    @keyframes fly { 0% { transform: translate(0, 0) scale(1); opacity: 0; } 2% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(var(--fx, 520px), var(--fy, 0px)) scale(.8); opacity: 0; } }
-    @keyframes light { from { fill: #D2D2CC; } to { fill: #F5B800; } }
-    @keyframes travel { from { transform: translateX(0); } to { transform: translateX(var(--tx, 500px)); } }
-    @keyframes travel2 { from { transform: translateX(0); } to { transform: translateX(var(--tx, 500px)); } }
-    @keyframes vanish { from { opacity: 1; } to { opacity: 0; } }
-    @keyframes fill { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
-    @keyframes popout { 0% { opacity: 0; transform: scale(.5); } 8% { opacity: 1; transform: scale(1.04); } 12% { transform: scale(1); } 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
-    .a-popout { animation-name: popout; animation-timing-function: ease-out; }
-
-    /* ===== Bausteine ===== */
-    .word { font-family: var(--ff-tight); font-weight: 800; letter-spacing: -.03em; line-height: .95; text-transform: uppercase; }
-    .word b { color: var(--gelb-text); }
-    .h { font-family: var(--ff-tight); font-weight: 800; letter-spacing: -.03em; line-height: 1.02; }
-    .sub { font-size: 26px; color: var(--ink-2); font-weight: 500; }
-    .caption { position: absolute; left: 80px; right: 80px; bottom: 56px; text-align: center; font-family: var(--ff-tight); font-weight: 800; font-size: 40px; letter-spacing: -.02em; }
-    .caption b { color: var(--gelb-text); }
-    .title { position: absolute; left: 80px; right: 80px; top: 64px; text-align: center; font-family: var(--ff-tight); font-weight: 800; font-size: 44px; letter-spacing: -.03em; }
-
-    .house { position: absolute; width: 260px; text-align: center; }
-    .house svg { width: 190px; height: 170px; margin: 0 auto; display: block; }
-    .house .name { font-family: var(--ff-tight); font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin-top: 6px; }
-    .house .ort { font-size: 16px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
-    .house.big { width: 360px; }
-    .house.big svg { width: 300px; height: 268px; }
-
-    .kunde { position: absolute; width: 430px; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 20px 22px; box-shadow: 0 30px 60px -24px rgba(14,14,13,.3); display: flex; gap: 18px; align-items: center; }
-    .kunde .ic { width: 68px; height: 68px; border-radius: 18px; background: var(--gelb-pale); border: 1px solid var(--gelb-soft); display: grid; place-items: center; flex: none; }
-    .kunde .ic svg { width: 42px; height: 42px; }
-    .kunde .t1 { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; }
-    .kunde .t2 { font-family: var(--ff-tight); font-weight: 800; font-size: 24px; letter-spacing: -.02em; margin-top: 2px; }
-    .kunde .t3 { font-size: 16px; color: var(--ink-2); margin-top: 2px; }
-    .stars { display: inline-flex; gap: 3px; align-items: center; }
-    .stars svg { width: 20px; height: 20px; }
-    .stars span { margin-left: 8px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
-    .bubble { position: absolute; max-width: 440px; background: var(--ink); color: #fff; padding: 18px 24px; border-radius: 20px; font-size: 25px; font-weight: 600; line-height: 1.3; box-shadow: 0 24px 50px -24px rgba(14,14,13,.5); }
-    .bubble::after { content: ""; position: absolute; bottom: -10px; width: 22px; height: 22px; background: inherit; transform: rotate(45deg); border-radius: 4px; }
-    .bubble.tl::after { left: 34px; }
-    .bubble.tr::after { right: 34px; }
-    .bubble.light { background: #fff; color: var(--ink); border: 1px solid var(--line); }
-    .bubble.light::after { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .bubble b { color: var(--gelb); }
-    .bubble.light b { color: var(--gelb-text); }
-
-    .barrier { position: absolute; width: 380px; }
-    .barrier .beam { height: 30px; border-radius: 8px; background: repeating-linear-gradient(-45deg, var(--gelb) 0 20px, var(--ink) 20px 40px); border: 3px solid var(--ink); }
-    .barrier .legs { display: flex; justify-content: space-between; padding: 0 34px; }
-    .barrier .legs i { width: 14px; height: 74px; background: var(--ink); border-radius: 0 0 4px 4px; }
-    .barrier .sign { margin-top: 14px; text-align: center; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 16px; color: var(--ink-3); }
-
-    .card { position: absolute; width: 400px; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 30px 60px -24px rgba(14,14,13,.35); overflow: hidden; }
-    .card .head { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: var(--gelb); font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-    .card .body { padding: 14px 18px 16px; font-size: 19px; display: flex; flex-direction: column; gap: 4px; }
-    .card .firm { font-family: var(--ff-tight); font-weight: 800; font-size: 24px; letter-spacing: -.02em; }
-    .card .meta { color: var(--ink-2); }
-    .bell { position: absolute; transform-origin: 50% 10%; }
-    .bell svg { width: 96px; height: 96px; }
-    .toast { position: absolute; background: var(--ink); color: #fff; padding: 16px 22px; border-radius: 16px; font-weight: 700; font-size: 24px; display: flex; gap: 12px; align-items: center; box-shadow: 0 20px 40px -20px rgba(0,0,0,.5); }
-    .toast i { width: 12px; height: 12px; border-radius: 50%; background: var(--gelb); flex: none; }
-    .toast.money { font-family: var(--ff-tight); font-size: 30px; letter-spacing: -.02em; }
-    .toast.money small { font-family: var(--ff); font-size: 16px; font-weight: 600; color: #CFCEC7; letter-spacing: 0; display: block; }
-    .tagpill { position: absolute; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; background: var(--gelb); }
-    .check { position: absolute; display: inline-flex; align-items: center; gap: 12px; background: var(--green); color: #fff; padding: 12px 20px; border-radius: 999px; font-weight: 700; font-size: 22px; }
-    .check svg { width: 24px; height: 24px; }
-
-    .kundenreihe { position: absolute; display: flex; gap: 22px; }
-    .kmini { position: relative; width: 240px; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: 0 20px 40px -20px rgba(14,14,13,.25); }
-    .kmini .n { font-family: var(--ff-tight); font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
-    .kmini .s { font-size: 14px; color: var(--ink-3); margin-top: 2px; }
-    .kmini .plus { position: absolute; right: -10px; top: -14px; background: var(--ink); color: var(--gelb); font-family: var(--ff-tight); font-weight: 800; font-size: 20px; padding: 6px 12px; border-radius: 999px; }
-    .bars { position: absolute; display: flex; gap: 44px; align-items: flex-end; }
-    .bar-col { width: 120px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    .bar-col .stack { width: 100%; display: flex; flex-direction: column-reverse; gap: 4px; }
-    .bar-col .b { width: 100%; border-radius: 10px; transform-origin: bottom; }
-    .bar-col .l { font-size: 16px; font-weight: 600; color: var(--ink-2); text-align: center; line-height: 1.2; }
-    .rendite { position: absolute; font-family: var(--ff-tight); font-weight: 800; font-size: 26px; letter-spacing: -.02em; display: inline-flex; align-items: center; gap: 10px; color: var(--gelb-text); }
-    .rendite svg { width: 30px; height: 30px; }
-
-    .route { position: absolute; left: 140px; right: 140px; top: 400px; height: 12px; }
-    .rail { position: absolute; inset: 0; background: #D2D2CC; border-radius: 6px; }
-    .seg { position: absolute; top: 0; height: 12px; background: repeating-linear-gradient(-45deg, var(--gelb) 0 10px, var(--ink) 10px 20px); border-radius: 6px; animation-name: fill; animation-timing-function: cubic-bezier(.65, 0, .35, 1); animation-duration: 2.2s; }
-    .city { position: absolute; top: 370px; width: 240px; margin-left: -120px; text-align: center; }
-    .city .dot { width: 34px; height: 34px; border-radius: 50%; border: 5px solid #D2D2CC; background: #fff; margin: 0 auto; }
-    .city .dot.on { border-color: var(--gelb); background: var(--gelb); animation-name: pop; animation-duration: .5s; animation-timing-function: cubic-bezier(.34,1.56,.64,1); }
-    .city .n { font-family: var(--ff-tight); font-weight: 800; font-size: 34px; letter-spacing: -.02em; margin-top: 14px; }
-    .city .o { display: inline-block; margin-top: 8px; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 7px 14px; border-radius: 999px; background: var(--gelb); }
-    .truck { position: absolute; top: 330px; left: 140px; margin-left: -34px; animation-name: travel; animation-timing-function: cubic-bezier(.65,0,.35,1); animation-duration: 2.2s; }
-    .truck svg { width: 68px; height: 48px; }
-
-    .badge { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 300px; text-align: center; }
-    .badge .ic { width: 92px; height: 92px; border-radius: 26px; background: var(--gelb-pale); border: 1px solid var(--gelb-soft); display: grid; place-items: center; }
-    .badge .ic svg { width: 42px; height: 42px; }
-    .badge .t { font-family: var(--ff-tight); font-weight: 800; font-size: 26px; letter-spacing: -.02em; }
-    .badge .s { font-size: 16px; color: var(--ink-3); }
-
-    .mascot { position: absolute; }
-    .mascot img { display: block; height: 100%; width: auto; }
-    .cta-btn { display: inline-flex; align-items: center; gap: 12px; background: var(--ink); color: #fff; font-weight: 700; font-size: 28px; padding: 22px 36px; border-radius: 18px; box-shadow: 0 24px 50px -20px rgba(14,14,13,.6); }
-    .cta-btn svg { width: 28px; height: 28px; }
-    .url { font-family: var(--ff-mono); font-size: 22px; color: var(--ink-2); letter-spacing: .04em; }
+    .bar .prog b { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--gelb); }
+    .export .bar, .export .play-cover { display: none !important; }
   </style>
 </head>
 <body>
 <div class="player paused" id="player">
   <div class="viewport" id="viewport">
     <div class="stage" id="stage">
-
-      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-        <symbol id="haus" viewBox="0 0 190 170"><path d="M20 80L95 22l75 58v78H20z" fill="#fff" stroke="#0E0E0D" stroke-width="6" stroke-linejoin="round"/><path d="M8 84L95 16l87 68" fill="none" stroke="#0E0E0D" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><rect x="78" y="100" width="34" height="58" fill="#0E0E0D"/><rect x="40" y="96" width="26" height="26" fill="#F5B800" stroke="#0E0E0D" stroke-width="5"/><rect x="124" y="96" width="26" height="26" fill="#F5B800" stroke="#0E0E0D" stroke-width="5"/></symbol>
-        <symbol id="helm" viewBox="0 0 42 42"><path d="M6 27a15 15 0 0 1 30 0" fill="#F5B800" stroke="#0E0E0D" stroke-width="3" stroke-linejoin="round"/><rect x="3" y="26" width="36" height="7" rx="3.5" fill="#0E0E0D"/><path d="M21 12v8" stroke="#0E0E0D" stroke-width="3" stroke-linecap="round"/></symbol>
-        <symbol id="star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8 6.5 19.7l1.2-6.1L3.2 9.4l6.1-.8z" fill="#F5B800" stroke="#0E0E0D" stroke-width="1.6" stroke-linejoin="round"/></symbol>
-        <symbol id="truckicon" viewBox="0 0 68 48"><rect x="2" y="10" width="40" height="26" rx="3" fill="#F5B800" stroke="#0E0E0D" stroke-width="4"/><path d="M42 18h14l8 10v8H42z" fill="#fff" stroke="#0E0E0D" stroke-width="4" stroke-linejoin="round"/><circle cx="14" cy="38" r="6" fill="#fff" stroke="#0E0E0D" stroke-width="4"/><circle cx="52" cy="38" r="6" fill="#fff" stroke="#0E0E0D" stroke-width="4"/></symbol>
-        <symbol id="bellicon" viewBox="0 0 96 96"><path d="M24 64V44a24 24 0 0 1 48 0v20l8 10H16z" fill="#F5B800" stroke="#0E0E0D" stroke-width="6" stroke-linejoin="round"/><path d="M40 80a8 8 0 0 0 16 0" fill="none" stroke="#0E0E0D" stroke-width="6"/><circle cx="48" cy="16" r="6" fill="#0E0E0D"/></symbol>
-        <symbol id="arrowup" viewBox="0 0 30 30"><path d="M6 20l9-10 9 10M15 10v14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-      </svg>
-
-      <!-- ===== Szene 1: Intro ===== -->
-      <section class="scene" data-scene="1">
-        <div class="mascot a a-left" style="left:70px; bottom:0; height:560px; --d:.2s; --dur:.9s"><img src="assets/img/mascot-light.svg" alt=""></div>
-        <div style="position:absolute; left:540px; top:250px;">
-          <div class="word a a-pop" style="font-size:74px; --d:.5s; --dur:.7s">Monteurzimmer<br><b>blick.de</b></div>
-          <div class="sub a a-up" style="margin-top:28px; font-size:30px; --d:1.8s">Mehr aus jedem Ihrer Kunden.</div>
-        </div>
-      </section>
-
-      <!-- ===== Szene 2: Der zufriedene Kunde fragt ===== -->
-      <section class="scene" data-scene="2">
-        <div class="house a a-left" style="left:90px; top:280px; --d:.6s">
-          <svg><use href="#haus"/></svg>
-          <div class="name">Ihre Wohnung</div><div class="ort">Magdeburg</div>
-        </div>
-        <div class="kunde a a-pop" style="left:440px; top:330px; --d:3.4s">
-          <div class="ic"><svg><use href="#helm"/></svg></div>
-          <div>
-            <div class="t1">Ihr Kunde</div>
-            <div class="t2">Baufirma Müller</div>
-            <div class="t3">6 Wochen bei Ihnen gewohnt</div>
-            <div class="stars a a-pop" style="margin-top:8px; --d:7.6s"><svg><use href="#star"/></svg><svg><use href="#star"/></svg><svg><use href="#star"/></svg><svg><use href="#star"/></svg><svg><use href="#star"/></svg><span>Hat sich wohlgefühlt</span></div>
-          </div>
-        </div>
-        <div class="bubble tl a a-pop" style="left:470px; top:170px; --d:11.4s">Haben Sie auch etwas <b>in Hamburg</b> für uns?</div>
-        <div class="tagpill a a-pop" style="left:930px; top:250px; --d:13.4s; font-size:18px; padding:12px 20px; white-space:nowrap">Nächste Baustelle: Hamburg</div>
-      </section>
-
-      <!-- ===== Szene 3: Ohne Monteurzimmerblick endet hier die Reise ===== -->
-      <section class="scene" data-scene="3">
-        <div class="house a a-fade" style="left:90px; top:280px; --d:0s; --dur:.2s">
-          <svg><use href="#haus"/></svg>
-          <div class="name">Ihre Wohnung</div><div class="ort">Magdeburg</div>
-        </div>
-        <div class="bubble light tl a a-pop" style="left:120px; top:150px; --d:.8s">Leider nein …</div>
-        <div class="kunde a a-leave" style="left:440px; top:330px; --d:5.8s">
-          <div class="ic"><svg><use href="#helm"/></svg></div>
-          <div><div class="t1">Ihr Kunde</div><div class="t2">Baufirma Müller</div><div class="t3">sucht woanders</div></div>
-        </div>
-        <div class="barrier a a-up" style="left:880px; top:300px; --d:3.0s">
-          <div class="beam"></div>
-          <div class="legs"><i></i><i></i></div>
-          <div class="sign">Hier endet die Reise</div>
-        </div>
-        <div class="caption a a-up" style="--d:9.2s">Anfrage weg. Geld weg. <b>Rendite weg.</b></div>
-      </section>
-
-      <!-- ===== Szene 4: Mit Monteurzimmerblick: vermitteln und verdienen ===== -->
-      <section class="scene" data-scene="4">
-        <div class="house a a-fade" style="left:90px; top:280px; --d:0s; --dur:.2s">
-          <svg><use href="#haus"/></svg>
-          <div class="name">Ihre Wohnung</div><div class="ort">Magdeburg</div>
-        </div>
-        <div class="bubble light tl a a-pop" style="left:120px; top:110px; max-width:520px; --d:2.4s">Kein Problem, ich vermittle Sie an einen <b>vertrauten Partner in Hamburg.</b></div>
-        <div class="card a a-popout" style="left:440px; top:330px; --d:8.0s; --dur:1.5s">
-          <div class="head"><span>Ihre Anfrage</span><span>Hamburg</span></div>
-          <div class="body"><div class="firm">Baufirma Müller</div><div class="meta">24 Monteure · 6 Wochen</div></div>
-        </div>
-        <div class="card a a-fly" style="left:440px; top:330px; --fx:340px; --fy:-40px; --d:9.4s; --dur:1.4s">
-          <div class="head"><span>Ihre Anfrage</span><span>Hamburg</span></div>
-          <div class="body"><div class="firm">Baufirma Müller</div><div class="meta">24 Monteure · 6 Wochen</div></div>
-        </div>
-        <div class="house a a-right" style="left:930px; top:280px; --d:9.0s">
-          <svg><use href="#haus"/></svg>
-          <div class="name">Partner</div><div class="ort">Hamburg</div>
-        </div>
-        <div class="tagpill a a-pop" style="left:975px; top:520px; --d:11.2s">Geprüfter Anbieter</div>
-        <div class="bell a" style="left:1130px; top:200px; animation-name: fade, ring; animation-delay: 10.4s, 10.6s; animation-duration: .3s, 1.2s; animation-timing-function: ease-out, ease-in-out"><svg><use href="#bellicon"/></svg></div>
-        <div class="toast money a a-pop" style="left:80px; top:560px; --d:13.2s"><i></i><div>+ 1.260 € für Sie<small>Beispiel: Ihre Vermittlung nach Hamburg</small></div></div>
-      </section>
-
-      <!-- ===== Szene 5: Jeder Kunde wird zur Einnahme ===== -->
-      <section class="scene" data-scene="5">
-        <div class="title a a-up" style="--d:.2s">Jeder Kunde, der auszieht, bringt noch einmal Geld.</div>
-        <div class="kundenreihe" style="left:80px; top:220px;">
-          <div class="kmini a a-pop" style="--d:1.0s"><div class="n">Baufirma Müller</div><div class="s">weiter nach Hamburg</div><div class="plus a a-pop" style="--d:3.4s">+ €</div></div>
-          <div class="kmini a a-pop" style="--d:1.4s"><div class="n">Elektro Schmidt</div><div class="s">weiter nach Leipzig</div><div class="plus a a-pop" style="--d:3.8s">+ €</div></div>
-          <div class="kmini a a-pop" style="--d:1.8s"><div class="n">Gerüstbau Koch</div><div class="s">weiter nach Berlin</div><div class="plus a a-pop" style="--d:4.2s">+ €</div></div>
-          <div class="kmini a a-pop" style="--d:2.2s"><div class="n">Stahlbau Weber</div><div class="s">weiter nach Wien</div><div class="plus a a-pop" style="--d:4.6s">+ €</div></div>
-        </div>
-        <div class="bars" style="left:340px; top:390px; height:260px;">
-          <div class="bar-col">
-            <div class="stack"><div class="b a a-grow" style="height:150px; background:#D2D2CC; --d:6.0s"></div></div>
-            <div class="l a a-fade" style="--d:6.0s">Nur Miete</div>
-          </div>
-          <div class="bar-col">
-            <div class="stack"><div class="b a a-grow" style="height:150px; background:#D2D2CC; --d:6.4s"></div><div class="b a a-grow" style="height:110px; background:var(--gelb); --d:7.2s"></div></div>
-            <div class="l a a-fade" style="--d:6.4s">Miete +<br>Vermittlung</div>
-          </div>
-        </div>
-        <div class="rendite a a-pop" style="left:760px; top:430px; --d:8.0s"><svg><use href="#arrowup"/></svg>Ihre Rendite steigt</div>
-        <div class="caption a a-up" style="--d:9.8s; font-size:36px">Mehr aus Kunden, die Sie längst haben. <b>Ohne eine neue Wohnung.</b></div>
-      </section>
-
-      <!-- ===== Szene 6: Leerstand füllen ===== -->
-      <section class="scene" data-scene="6">
-        <div class="house big a a-left" style="left:130px; top:220px; --d:.2s">
-          <svg viewBox="0 0 190 170" aria-hidden="true"><path d="M20 80L95 22l75 58v78H20z" fill="#fff" stroke="#0E0E0D" stroke-width="6" stroke-linejoin="round"/><path d="M8 84L95 16l87 68" fill="none" stroke="#0E0E0D" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><rect x="78" y="100" width="34" height="58" fill="#0E0E0D"/><rect class="a a-light" style="--d:4.8s" x="40" y="96" width="26" height="26" fill="#D2D2CC" stroke="#0E0E0D" stroke-width="5"/><rect class="a a-light" style="--d:5.1s" x="124" y="96" width="26" height="26" fill="#D2D2CC" stroke="#0E0E0D" stroke-width="5"/><rect class="a a-light" style="--d:5.4s" x="40" y="60" width="26" height="22" fill="#D2D2CC" stroke="#0E0E0D" stroke-width="5"/><rect class="a a-light" style="--d:5.7s" x="124" y="60" width="26" height="22" fill="#D2D2CC" stroke="#0E0E0D" stroke-width="5"/></svg>
-          <div class="name">Ihre Wohnung</div><div class="ort">Magdeburg</div>
-        </div>
-        <div class="tagpill a a-popout" style="left:200px; top:180px; background:#fff; border:1px solid var(--line); --d:.8s; --dur:5.4s">Leerstand · 4 Zimmer frei</div>
-        <div class="card a a-right" style="left:660px; top:250px; width:460px; --d:1.8s">
-          <div class="head"><span>Anfrage in Ihrer Stadt</span><span>Magdeburg</span></div>
-          <div class="body"><div class="firm">Tiefbau Lange GmbH</div><div class="meta">12 Monteure · 4 Wochen · ab 20.10.</div><div style="margin-top:10px"><span class="cta-btn a a-press" style="font-size:20px; padding:12px 22px; border-radius:12px; --d:3.8s">Anfrage kaufen</span></div></div>
-        </div>
-        <div class="check a a-pop" style="left:150px; top:560px; --d:6.2s"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Belegt</div>
-      </section>
-
-      <!-- ===== Szene 7: Für Ihre Kunden ===== -->
-      <section class="scene" data-scene="7">
-        <div class="title a a-up" style="--d:.2s">Ihre Kunden werden von Stadt zu Stadt weiterempfohlen.</div>
-        <div class="route">
-          <div class="rail"></div>
-          <div class="seg a" style="left:0; width:50%; --d:2.6s"></div>
-          <div class="seg a" style="left:50%; width:50%; --d:5.6s"></div>
-        </div>
-        <div class="city" style="left:140px"><div class="dot on"></div><div class="n">Magdeburg</div><div class="o">Ihre Wohnung</div></div>
-        <div class="city" style="left:640px"><div class="dot on a" style="--d:4.8s"></div><div class="n">Hamburg</div><div class="o a a-pop" style="--d:5.0s">Empfohlen</div></div>
-        <div class="city" style="left:1140px"><div class="dot on a" style="--d:7.8s"></div><div class="n">München</div><div class="o a a-pop" style="--d:8.0s">Empfohlen</div></div>
-        <div class="truck a" style="--d:2.6s; --tx:500px; animation-name: travel, vanish; animation-delay: 2.6s, 5.6s; animation-duration: 2.2s, .3s"><svg><use href="#truckicon"/></svg></div>
-        <div class="truck a" style="left:640px; --d:5.6s; --tx:500px; animation-name: travel2"><svg><use href="#truckicon"/></svg></div>
-        <div class="stars a a-pop" style="position:absolute; left:0; right:0; top:230px; justify-content:center; --d:8.6s"><svg><use href="#star"/></svg><svg><use href="#star"/></svg><svg><use href="#star"/></svg><svg><use href="#star"/></svg><svg><use href="#star"/></svg><span style="font-size:20px">Nie wieder selbst suchen</span></div>
-        <div class="caption a a-up" style="--d:9.8s">Zufriedene Kunden, <b>die wiederkommen.</b></div>
-      </section>
-
-      <!-- ===== Szene 8: Vertrauen + Aufruf ===== -->
-      <section class="scene" data-scene="8">
-        <div class="badge a a-up" style="left:100px; top:90px; --d:.3s"><div class="ic"><svg viewBox="0 0 44 44" aria-hidden="true"><path d="M8 30h28M10 30V17h24v13M17 17V12h10v5" fill="none" stroke="#0E0E0D" stroke-width="3.2" stroke-linejoin="round"/><path d="M22 20v7" stroke="#0E0E0D" stroke-width="3.2" stroke-linecap="round"/></svg></div><div class="t">Sie bestimmen den Preis</div><div class="s">für jede Vermittlung.</div></div>
-        <div class="badge a a-up" style="left:490px; top:90px; --d:2.0s"><div class="ic"><svg viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="19" width="26" height="19" rx="4" fill="none" stroke="#0E0E0D" stroke-width="3.5"/><path d="M15 19v-5a7 7 0 0 1 14 0v5" fill="none" stroke="#0E0E0D" stroke-width="3.5"/><circle cx="22" cy="28" r="2.5" fill="#0E0E0D"/></svg></div><div class="t">Sichere Bezahlung</div><div class="s">Wir kümmern uns darum.</div></div>
-        <div class="badge a a-up" style="left:880px; top:90px; --d:2.8s"><div class="ic"><svg viewBox="0 0 44 44" aria-hidden="true"><path d="M22 5l13 5v11c0 8.5-5.5 14-13 17-7.5-3-13-8.5-13-17V10z" fill="none" stroke="#0E0E0D" stroke-width="3.5" stroke-linejoin="round"/><path d="M15 22l5 5 9-9" fill="none" stroke="#0E0E0D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="t">Geprüfte Partner</div><div class="s">Nur echte Anbieter.</div></div>
-        <div class="mascot a a-right" style="right:70px; bottom:0; height:430px; --d:5.2s; --dur:.9s"><img src="assets/img/mascot-light.svg" alt=""></div>
-        <div style="position:absolute; left:100px; top:400px; width:640px;">
-          <div class="h a a-up" style="font-size:66px; --d:5.2s">Kostenlos starten.</div>
-          <div class="a a-pop" style="margin-top:28px; --d:6.2s"><span class="cta-btn">Jetzt registrieren <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
-          <div class="url a a-up" style="margin-top:22px; --d:7.0s">monteurzimmerblick.de</div>
-        </div>
-      </section>
-
+      <div class="layer" id="L-street"><svg id="S-street" viewBox="0 0 1920 1080"></svg></div>
+      <div class="layer" id="L-phone"><svg id="S-phone" viewBox="0 0 1920 1080"></svg></div>
+      <div class="layer" id="L-map"><div class="cam" id="mapcam"><svg id="S-map" viewBox="0 0 1920 1080"></svg></div></div>
+      <div class="layer" id="L-hh"><svg id="S-hh" viewBox="0 0 1920 1080"></svg></div>
+      <div class="layer" id="L-recap"><svg id="S-recap" viewBox="0 0 1920 1080"></svg></div>
+      <div class="layer" id="L-cta"><svg id="S-cta" viewBox="0 0 1920 1080"></svg></div>
+      <div id="caps"></div>
+      <div class="wipe" id="wipe"></div>
+      <div class="cover-sq" id="coverSq"></div>
     </div>
   </div>
-
-  <button class="cover" id="cover" type="button" aria-label="Video abspielen"><span class="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="#0E0E0D"/></svg></span><span class="lbl" id="coverLbl">Erklärvideo abspielen</span></button>
-  <div class="bar" id="bar">
-    <button type="button" id="btnPlay" aria-label="Abspielen / Pause"><svg class="ic-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg><svg class="ic-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg></button>
-    <div class="prog" id="prog" role="slider" aria-label="Position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><i><b id="progFill"></b></i></div>
-    <span class="time" id="time">0:00 / 0:00</span>
-    <button type="button" id="btnMute" aria-label="Ton aus / an"><svg class="ic-mute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic-unmute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-    <button type="button" id="btnFull" aria-label="Vollbild"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button class="play-cover" id="playCover" type="button" aria-label="Video abspielen"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="#0E0E0D"/></svg></span></button>
+  <div class="bar">
+    <button type="button" id="btnPlay" aria-label="Abspielen / Pause">▶</button>
+    <div class="prog" id="prog"><i><b id="progFill"></b></i></div>
+    <span id="time">0:00</span>
   </div>
-
-  <audio id="music" loop preload="auto" src="assets/video/music.mp3"></audio>
-  <div id="voices" hidden>
-    <audio data-scene="1" preload="auto" src="assets/video/voice/s1.mp3"></audio>
-    <audio data-scene="2" preload="auto" src="assets/video/voice/s2.mp3"></audio>
-    <audio data-scene="3" preload="auto" src="assets/video/voice/s3.mp3"></audio>
-    <audio data-scene="4" preload="auto" src="assets/video/voice/s4.mp3"></audio>
-    <audio data-scene="5" preload="auto" src="assets/video/voice/s5.mp3"></audio>
-    <audio data-scene="6" preload="auto" src="assets/video/voice/s6.mp3"></audio>
-    <audio data-scene="7" preload="auto" src="assets/video/voice/s7.mp3"></audio>
-    <audio data-scene="8" preload="auto" src="assets/video/voice/s8.mp3"></audio>
-  </div>
+  <audio id="audio" preload="auto" src="assets/video/erklaervideo.mp4"></audio>
 </div>
 
+<script src="assets/video/lib/gsap.min.js"></script>
+<script src="assets/video/lib/DrawSVGPlugin.min.js"></script>
+<script src="assets/video/lib/MotionPathPlugin.min.js"></script>
+<script src="assets/video/lib/CustomEase.min.js"></script>
 <script>
 (function () {
   'use strict';
-  /* Szenenlängen in Sekunden (Sprecherclip + Nachlauf). */
-  var DUR = [6.78, 17.45, 14.66, 17.34, 13.93, 8.93, 13.3, 12.39];
-  var starts = [], total = 0;
-  DUR.forEach(function (d) { starts.push(total); total += d; });
+  gsap.registerPlugin(DrawSVGPlugin, MotionPathPlugin, CustomEase);
 
-  var d = document;
-  var player = d.getElementById('player');
-  var viewport = d.getElementById('viewport');
-  var stage = d.getElementById('stage');
-  var scenes = Array.prototype.slice.call(d.querySelectorAll('.scene'));
-  var cover = d.getElementById('cover');
-  var coverLbl = d.getElementById('coverLbl');
-  var btnPlay = d.getElementById('btnPlay');
-  var btnMute = d.getElementById('btnMute');
-  var btnFull = d.getElementById('btnFull');
-  var prog = d.getElementById('prog');
-  var progFill = d.getElementById('progFill');
-  var timeEl = d.getElementById('time');
-  var music = d.getElementById('music');
-  var voices = Array.prototype.slice.call(d.querySelectorAll('#voices audio'));
-  var params = new URLSearchParams(location.search);
-  var EXPORT = params.has('export');
-  if (EXPORT) player.classList.add('export');
+  var INK = '#0E0E0D', Y = '#F5B800', WH = '#FFFFFF', BG = '#F6F6F3', G1 = '#EDEDE8', G2 = '#E4E4DF', G3 = '#D2D2CC', G4 = '#7A7A74', DK = '#3A3A36';
+  var SK = 'stroke="' + INK + '" stroke-linejoin="round" stroke-linecap="round"';
+  var DURATION = 55.6;
+  var MARK = { x: 0, y: 0 };
+  var T = {};   /* Zeitpunkte für Zustände, die render() direkt setzt */
 
-  var t = 0, playing = false, t0 = 0, raf = 0, muted = false, ended = false, current = -1;
-  music.volume = 0.14;
+  /* ================= Sprecher: eine Aufnahme, in Sätze geschnitten ================= */
+  /* [von, bis] in der Aufnahme -> Start auf der Timeline (Sekunden) */
+  var VO_SEGS = [
+    [0.20, 4.40, 0.60],    // Das ist Herr Berger. Er vermietet Monteurzimmer in Magdeburg.
+    [4.80, 9.62, 5.15],    // Seine Kunden sind zufrieden. Doch die Baustelle zieht weiter – nach Hamburg.
+    [10.36, 12.30, 10.55], // Dort hat Herr Berger kein Zimmer.
+    [12.80, 16.05, 12.95], // Früher war die Anfrage damit weg. Und das Geld auch.
+    [16.45, 20.42, 17.55], // Heute gibt er sie einfach weiter – mit Monteurzimmerblick.
+    [20.72, 24.12, 22.75], // Eine geprüfte Vermieterin in Hamburg übernimmt den Kunden.
+    [24.52, 25.98, 26.95], // Und Herr Berger verdient mit.
+    [26.52, 28.78, 29.65], // Ohne ein einziges neues Zimmer.
+    [29.40, 36.28, 32.55], // Und umgekehrt: … kauft er Anfragen aus seiner Stadt. So sind sie schnell wieder belegt.
+    [36.52, 40.20, 40.15], // Weitergeben. Mitverdienen. Leerstand füllen.
+    [40.62, 42.92, 44.25], // So holen Sie mehr aus jedem Kunden.
+    [43.46, 48.64, 47.25]  // Monteurzimmerblick. Jetzt kostenlos starten – auf monteurzimmerblick punkt de.
+  ];
+  /* Wortanfänge laut Transkription (Sekunden in der Aufnahme) */
+  var WORDS = 'Das .28|ist .72|Herr .92|Berger 1.12|Er 2.16|vermietet 2.28|Monteurzimmer 2.72|in 3.52|Magdeburg 3.70|Seine 4.96|Kunden 5.20|sind 5.58|zufrieden 5.82|doch 6.86|die 7.06|Baustelle 7.26|zieht 7.88|weiter 8.10|nach 8.88|Hamburg 9.10|Dort 10.46|hat 10.76|Herr 10.96|Berger 11.16|kein 11.56|Zimmer 11.88|Früher 12.92|war 13.28|die 13.42|Anfrage 13.62|damit 14.14|weg 14.44|und 15.24|das 15.34|Geld 15.52|auch 15.80|Heute 16.82|gibt 17.34|er 17.52|sie 17.64|einfach 17.84|weiter 18.20|mit 18.96|Monteurzimmerblick 19.34|Eine 21.16|geprüfte 21.36|Vermieterin 21.94|in 22.52|Hamburg 22.68|übernimmt 23.22|den 23.60|Kunden 23.76|und 24.60|Herr 24.74|Berger 24.94|verdient 25.38|mit 25.74|ohne 26.62|ein 27.00|einziges 27.32|neues 27.96|Zimmer 28.38|Und 29.48|umgekehrt 29.62|Stehen 30.70|bei 31.02|ihm 31.28|Zimmer 31.54|leer 31.84|kauft 32.46|er 32.80|Anfragen 32.98|aus 33.52|seiner 33.72|Stadt 34.02|So 35.00|sind 35.14|sie 35.26|schnell 35.38|wieder 35.62|belegt 35.82|Weitergeben 37.04|mitverdienen 38.16|Leerstand 39.28|füllen 39.78|So 40.76|holen 40.92|Sie 41.18|mehr 41.44|aus 41.78|jedem 42.08|Kunden 42.44|Monteurzimmerblick 43.54|jetzt 45.04|kostenlos 45.42|starten 45.98|auf 46.74|monteurzimmerblick.de 46.90'
+    .split('|').map(function (s) { var p = s.split(' '); return [p[0].toLowerCase(), parseFloat(p[1])]; });
 
+  function vt(src) {
+    for (var i = 0; i < VO_SEGS.length; i++) {
+      var s = VO_SEGS[i];
+      if (src >= s[0] - 0.001 && src <= s[1] + 0.001) return s[2] + (src - s[0]);
+    }
+    throw new Error('Zeit ausserhalb der Schnitte: ' + src);
+  }
+  /* Zeitpunkt eines gesprochenen Wortes auf der Timeline, z. B. at('Hamburg', 2) */
+  function at(word, n) {
+    n = n || 1; word = word.toLowerCase();
+    for (var i = 0, c = 0; i < WORDS.length; i++) {
+      if (WORDS[i][0] === word && ++c === n) return vt(WORDS[i][1]);
+    }
+    throw new Error('Wort nicht gefunden: ' + word + ' #' + n);
+  }
+
+  /* ================= Geräusche (werden beim Export gemischt) ================= */
+  var SFX = [];
+  function sfx(name, t, gain) { SFX.push({ name: name, t: +t.toFixed(3), gain: gain == null ? 1 : gain }); }
+
+  /* ================= SVG-Helfer ================= */
+  function $(id) { return document.getElementById(id); }
+  function put(svgId, markup) { $(svgId).insertAdjacentHTML('beforeend', markup); }
+  function q(sel) { return document.querySelector(sel); }
+
+  function starPath(r) {
+    var d = '', i, a, rr;
+    for (i = 0; i < 10; i++) { a = -Math.PI / 2 + i * Math.PI / 5; rr = i % 2 ? r * 0.46 : r; d += (i ? 'L' : 'M') + (Math.cos(a) * rr).toFixed(1) + ',' + (Math.sin(a) * rr).toFixed(1); }
+    return d + 'Z';
+  }
+  function star(id, x, y, r) {
+    return '<g transform="translate(' + x + ',' + y + ')"><g id="' + id + '"><path d="' + starPath(r) + '" fill="' + Y + '" stroke="' + INK + '" stroke-width="5" stroke-linejoin="round"/></g></g>';
+  }
+  function logoMark(id) {
+    return '<g id="' + id + '"><rect width="100" height="100" rx="20" fill="' + Y + '"/>' +
+      '<g transform="rotate(-18 50 50)">' +
+      '<rect class="t1" x="5" y="43" width="20" height="14" rx="3" fill="' + INK + '"/>' +
+      '<rect class="t2" x="27" y="39" width="26" height="22" rx="3" fill="' + INK + '"/>' +
+      '<g class="t3"><rect x="55" y="31" width="38" height="38" rx="5" fill="' + INK + '"/><circle cx="79" cy="50" r="9.5" fill="' + Y + '"/><circle cx="82" cy="47" r="2.8" fill="' + INK + '"/></g>' +
+      '</g></g>';
+  }
+  function helmetIcon(x, y, s) {
+    return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')"><path d="M-26,4 A26 26 0 0 1 26,4 Z" fill="' + Y + '" ' + SK + ' stroke-width="4"/><rect x="-32" y="0" width="64" height="10" rx="5" fill="' + INK + '"/><path d="M0,-22 V-8" ' + SK + ' stroke-width="4"/></g>';
+  }
+  /* Anfrage-Karte, Mittelpunkt 0,0, Größe 330×196 */
+  function requestCard(id, city, sub, label) {
+    return '<g id="' + id + '">' +
+      '<rect x="-165" y="-98" width="330" height="196" rx="24" fill="' + Y + '" ' + SK + ' stroke-width="6"/>' +
+      '<text x="-137" y="-50" font-size="19" class="ui" style="font-weight:700;letter-spacing:.12em">' + (label || 'ANFRAGE') + '</text>' +
+      helmetIcon(122, -58, 0.7) +
+      '<text x="-137" y="18" font-size="56">' + city + '</text>' +
+      '<text x="-137" y="62" font-size="23" class="ui" style="font-weight:600">' + sub + '</text>' +
+      '</g>';
+  }
+  function banknote(id) {
+    return '<g id="' + id + '"><rect x="-80" y="-44" width="160" height="88" rx="10" fill="' + WH + '" ' + SK + ' stroke-width="5"/>' +
+      '<rect x="-66" y="-31" width="132" height="62" rx="6" fill="none" stroke="' + INK + '" stroke-width="3"/>' +
+      '<circle r="24" fill="' + Y + '" ' + SK + ' stroke-width="4"/>' +
+      '<text y="11" text-anchor="middle" font-size="32">€</text></g>';
+  }
+  function coin(id) {
+    return '<g id="' + id + '"><circle r="40" fill="' + Y + '" ' + SK + ' stroke-width="6"/><circle r="29" fill="none" stroke="' + INK + '" stroke-width="3"/>' +
+      '<text y="15" text-anchor="middle" font-size="44">€</text></g>';
+  }
+  function mapPin(id, x, y, label, side) {
+    var lx = side === 'left' ? -28 - 24 : 28 + 24;
+    var w = label.length * 19 + 56;
+    var rx = side === 'left' ? lx - w : lx;
+    return '<g transform="translate(' + x + ',' + y + ')"><g id="' + id + '">' +
+      '<g class="pin"><path d="M0,0 C-8,-18 -28,-30 -28,-54 A28 28 0 0 1 28,-54 C28,-30 8,-18 0,0 Z" fill="' + INK + '" ' + SK + ' stroke-width="4"/><circle cy="-54" r="11" fill="' + Y + '"/></g>' +
+      (label ? '<g class="lbl"><rect x="' + rx + '" y="-84" width="' + w + '" height="58" rx="29" fill="' + WH + '" ' + SK + ' stroke-width="5"/><text x="' + (rx + w / 2) + '" y="-44" text-anchor="middle" font-size="31">' + label + '</text></g>' : '') +
+      '</g></g>';
+  }
+
+  /* ================= Figuren (Rig) ================= */
+  var CHARS = [];
+  var LOOK = {
+    berger: { skin: '#F1C7A1', top: DK, sleeve: WH, pants: G4, eyeY: -436 },
+    worker: { skin: '#9A6440', top: DK, sleeve: DK, pants: G4, eyeY: -422 },
+    lady:   { skin: '#6E4630', top: WH, sleeve: WH, pants: DK, eyeY: -434 }
+  };
+  function charSVG(id, type) {
+    var L = LOOK[type], s5 = SK + ' stroke-width="5"';
+    function arm(side) {
+      var extra = '';
+      if (type === 'worker') extra = '<rect x="-14" y="44" width="28" height="12" fill="' + Y + '" ' + SK + ' stroke-width="3.5"/>';
+      return '<g id="' + id + '-arm' + side + '">' +
+        '<rect x="-15" y="-12" width="30" height="96" rx="15" fill="' + L.sleeve + '" ' + s5 + '/>' +
+        '<g id="' + id + '-fore' + side + '">' +
+        '<rect x="-14" y="-10" width="28" height="86" rx="14" fill="' + (type === 'lady' ? L.skin : L.sleeve) + '" ' + s5 + '/>' + extra +
+        '<g id="' + id + '-hold' + side + '" transform="translate(0,78)"></g>' +
+        '<circle cx="0" cy="78" r="17" fill="' + L.skin + '" ' + s5 + '/>' +
+        '</g></g>';
+    }
+    function leg(side) {
+      return '<g id="' + id + '-leg' + side + '">' +
+        '<rect x="-18" y="-10" width="36" height="166" rx="18" fill="' + L.pants + '" ' + s5 + '/>' +
+        '<path d="M-24,152 Q-24,146 -16,146 L20,146 Q46,146 46,168 L46,178 L-24,178 Z" fill="' + INK + '" ' + s5 + '/>' +
+        '</g>';
+    }
+    var torso = '<path d="M-58,-340 Q-58,-366 -32,-366 L32,-366 Q58,-366 58,-340 L54,-196 Q54,-182 40,-182 L-40,-182 Q-54,-182 -54,-196 Z" fill="' + L.top + '" ' + s5 + '/>';
+    if (type === 'berger') torso += '<path d="M-30,-366 L0,-300 L30,-366 Z" fill="' + WH + '" ' + SK + ' stroke-width="4"/><path d="M-30,-366 L-14,-348 L0,-362 L14,-348 L30,-366" fill="' + WH + '" ' + SK + ' stroke-width="4"/><path d="M0,-352 L-7,-340 L0,-306 L7,-340 Z" fill="' + Y + '" ' + SK + ' stroke-width="3"/><circle cx="-4" cy="-272" r="4.5" fill="' + WH + '"/><circle cx="-4" cy="-238" r="4.5" fill="' + WH + '"/>';
+    if (type === 'worker') torso += '<rect x="-56" y="-300" width="112" height="18" fill="' + Y + '" ' + SK + ' stroke-width="4"/><rect x="-55" y="-248" width="110" height="18" fill="' + Y + '" ' + SK + ' stroke-width="4"/>';
+    if (type === 'lady') torso += '<path d="M-28,-368 L28,-368 L6,-322 Z" fill="' + Y + '" ' + SK + ' stroke-width="4"/>';
+    var back = '', front = '';
+    if (type === 'berger') {
+      back = '<circle cx="-46" cy="-428" r="11" fill="' + L.skin + '" ' + s5 + '/>';
+      front = '<path d="M-52,-412 C-64,-470 -26,-494 8,-484 C-16,-470 -28,-448 -30,-420 C-38,-414 -46,-410 -52,-412 Z" fill="' + G3 + '" ' + SK + ' stroke-width="4.5"/>' +
+        '<path d="M22,-414 Q33,-423 46,-414 Q34,-407 22,-414 Z" fill="' + G3 + '" ' + SK + ' stroke-width="3.5"/>' +
+        '<circle cx="14" cy="' + L.eyeY + '" r="13" fill="none" ' + SK + ' stroke-width="4"/><circle cx="41" cy="' + L.eyeY + '" r="13" fill="none" ' + SK + ' stroke-width="4"/><path d="M1,' + (L.eyeY - 2) + ' L-40,' + (L.eyeY + 2) + '" ' + SK + ' stroke-width="4"/>';
+    }
+    if (type === 'worker') {
+      front = '<path d="M-60,-438 A60 60 0 0 1 60,-438 Z" fill="' + Y + '" ' + s5 + '/><rect x="-64" y="-446" width="142" height="16" rx="8" fill="' + Y + '" ' + s5 + '/><path d="M0,-494 V-450" ' + SK + ' stroke-width="4.5"/>' +
+        '<path d="M-40,-404 Q-20,-372 20,-376 Q44,-380 52,-404" fill="none" ' + SK + ' stroke-width="4" opacity=".0"/>';
+      back = '<circle cx="-46" cy="-418" r="11" fill="' + L.skin + '" ' + s5 + '/>';
+    }
+    if (type === 'lady') {
+      back = '<circle cx="-22" cy="-488" r="26" fill="' + INK + '" ' + s5 + '/>';
+      front = '<path d="M-55,-418 C-62,-486 34,-506 56,-446 C34,-464 -6,-470 -32,-444 L-38,-404 C-46,-404 -52,-410 -55,-418 Z" fill="' + INK + '" ' + SK + ' stroke-width="4.5"/><circle cx="-40" cy="-400" r="6" fill="' + Y + '" ' + SK + ' stroke-width="3"/>';
+    }
+    var ey = L.eyeY;
+    var face = '<g id="' + id + '-eyes"><circle cx="14" cy="' + ey + '" r="5.5" fill="' + INK + '"/><circle cx="41" cy="' + ey + '" r="5.5" fill="' + INK + '"/></g>' +
+      '<path d="M46,' + (ey + 8) + ' q7,6 0,11" fill="none" ' + SK + ' stroke-width="4"/>' +
+      '<path d="M18,' + (ey + 30) + ' Q30,' + (ey + 40) + ' 42,' + (ey + 29) + '" fill="none" ' + SK + ' stroke-width="4.5"/>';
+    var bag = type === 'worker' ? '<g id="' + id + '-bag"></g>' : '';
+    return '<g id="' + id + '">' +
+      '<ellipse id="' + id + '-shadow" cx="4" cy="2" rx="84" ry="13" fill="' + INK + '" opacity=".08"/>' +
+      '<g id="' + id + '-body">' +
+      '<g id="' + id + '-legB" transform="translate(-24,-178)">' + leg('B') + '</g>' +
+      '<g id="' + id + '-legF" transform="translate(24,-178)">' + leg('F') + '</g>' +
+      '<g id="' + id + '-upper">' +
+      '<g id="' + id + '-armBw" transform="translate(-50,-344)">' + arm('B') + '</g>' +
+      torso +
+      '<rect x="-13" y="-386" width="26" height="30" fill="' + L.skin + '" ' + s5 + '/>' +
+      '<g id="' + id + '-head">' + back + '<circle cx="0" cy="-430" r="54" fill="' + L.skin + '" ' + s5 + '/>' + face + front + '</g>' +
+      '<g id="' + id + '-armFw" transform="translate(50,-344)">' + arm('F') + '</g>' +
+      bag +
+      '</g></g></g>';
+  }
+  function makeChar(svgId, id, type, p) {
+    put(svgId, '<g id="' + id + '-root">' + charSVG(id, type) + '</g>');
+    var c = {
+      id: id, seed: CHARS.length * 1.7,
+      root: $(id + '-root'), upper: $(id + '-upper'), head: $(id + '-head'), eyes: $(id + '-eyes'),
+      legF: $(id + '-legF'), legB: $(id + '-legB'), armF: $(id + '-armFw'), armB: $(id + '-armBw'),
+      foreF: $(id + '-foreF'), foreB: $(id + '-foreB'), shadow: $(id + '-shadow'),
+      p: Object.assign({ x: 0, y: 0, s: 1, face: 1, sy: 1, op: 1, bob: 0, lean: 0, head: 0, headY: 0,
+        legF: 0, legB: 0, armFu: -7, armFl: 8, armBu: 7, armBl: -8, walkPhase: 0, walkAmp: 0, blink: 1 }, p || {})
+    };
+    CHARS.push(c);
+    return c;
+  }
+  function drawChar(c, t) {
+    var p = c.p, sw = Math.sin(p.walkPhase), a = p.walkAmp;
+    var legF = p.legF - a * 26 * sw, legB = p.legB + a * 26 * sw;
+    var armFu = p.armFu + a * 20 * sw, armBu = p.armBu - a * 20 * sw;
+    var bob = p.bob - a * 8 * Math.abs(Math.cos(p.walkPhase)) + Math.sin(t * 2.2 + c.seed) * 1.6;
+    var sx = p.s * p.face / Math.sqrt(p.sy), sy = p.s * p.sy;
+    c.root.setAttribute('transform', 'translate(' + p.x.toFixed(2) + ',' + p.y.toFixed(2) + ') scale(' + sx.toFixed(4) + ',' + sy.toFixed(4) + ')');
+    c.root.setAttribute('opacity', p.op);
+    c.legF.setAttribute('transform', 'translate(24,-178) rotate(' + legF.toFixed(2) + ')');
+    c.legB.setAttribute('transform', 'translate(-24,-178) rotate(' + legB.toFixed(2) + ')');
+    c.upper.setAttribute('transform', 'translate(0,' + bob.toFixed(2) + ') rotate(' + p.lean.toFixed(2) + ',0,-190)');
+    c.armF.setAttribute('transform', 'translate(50,-344) rotate(' + armFu.toFixed(2) + ')');
+    c.armB.setAttribute('transform', 'translate(-50,-344) rotate(' + armBu.toFixed(2) + ')');
+    c.foreF.setAttribute('transform', 'translate(0,76) rotate(' + p.armFl.toFixed(2) + ')');
+    c.foreB.setAttribute('transform', 'translate(0,76) rotate(' + p.armBl.toFixed(2) + ')');
+    c.head.setAttribute('transform', 'translate(0,' + p.headY.toFixed(2) + ') rotate(' + p.head.toFixed(2) + ',0,-376)');
+    var ph = (t + c.seed * 1.3) % 3.9, bl = ph < 0.13 ? 0.12 : 1;
+    bl = Math.min(bl, p.blink);
+    var ey = c.id.indexOf('w') === 0 ? -422 : (c.id.indexOf('l') === 0 ? -434 : -436);
+    c.eyes.setAttribute('transform', 'translate(0,' + ey + ') scale(1,' + bl + ') translate(0,' + (-ey) + ')');
+  }
+
+  /* ================= Deutschlandkarte ================= */
+  var KY = 112.8, KX = KY * 0.63, MX0 = 634.5, MY0 = 100;
+  function proj(lon, lat) { return [MX0 + (lon - 5.87) * KX, MY0 + (55.06 - lat) * KY]; }
+  var DE = [[8.66,54.91],[9.44,54.84],[10.03,54.69],[10.17,54.40],[11.0,54.38],[10.8,54.05],[11.45,53.98],[12.10,54.18],[12.9,54.44],[13.45,54.62],[13.7,54.3],[14.2,53.95],[14.41,53.3],[14.14,52.83],[14.64,52.57],[14.72,52.1],[14.6,51.8],[15.04,51.28],[14.82,50.87],[14.3,51.05],[13.9,50.78],[13.0,50.45],[12.5,50.35],[12.1,50.3],[12.5,49.95],[12.45,49.7],[13.0,49.3],[13.83,48.77],[13.45,48.57],[13.0,48.26],[12.76,48.12],[13.0,47.47],[12.2,47.6],[11.6,47.58],[11.1,47.4],[10.45,47.55],[10.18,47.27],[9.6,47.53],[9.0,47.68],[8.6,47.62],[7.6,47.58],[7.55,47.95],[7.95,48.6],[8.2,48.97],[7.45,49.17],[6.73,49.17],[6.36,49.47],[6.5,49.8],[6.1,50.15],[6.4,50.33],[6.1,50.72],[5.87,51.05],[6.17,51.2],[6.1,51.6],[6.8,51.95],[7.05,52.23],[6.7,52.48],[7.07,52.65],[7.2,53.2],[7.0,53.6],[7.9,53.72],[8.25,53.52],[8.55,53.55],[8.6,53.87],[9.0,53.9],[8.9,54.15],[8.62,54.3],[9.0,54.5],[8.65,54.75]];
+  function smooth(pts, k) {
+    var n = pts.length, d = 'M' + pts[0][0].toFixed(1) + ',' + pts[0][1].toFixed(1), i, p0, p1, p2, p3;
+    for (i = 0; i < n; i++) {
+      p0 = pts[(i - 1 + n) % n]; p1 = pts[i]; p2 = pts[(i + 1) % n]; p3 = pts[(i + 2) % n];
+      d += 'C' + (p1[0] + (p2[0] - p0[0]) / 6 * k).toFixed(1) + ',' + (p1[1] + (p2[1] - p0[1]) / 6 * k).toFixed(1) + ' ' +
+        (p2[0] - (p3[0] - p1[0]) / 6 * k).toFixed(1) + ',' + (p2[1] - (p3[1] - p1[1]) / 6 * k).toFixed(1) + ' ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1);
+    }
+    return d + 'Z';
+  }
+  var DE_PATH = smooth(DE.map(function (p) { return proj(p[0], p[1]); }), 1);
+  var CITY = { magdeburg: proj(11.63, 52.13), hamburg: proj(9.99, 53.55), berlin: proj(13.40, 52.52), muenchen: proj(11.58, 48.14), koeln: proj(6.96, 50.94), frankfurt: proj(8.68, 50.11), leipzig: proj(12.37, 51.34), dortmund: proj(7.47, 51.51), stuttgart: proj(9.18, 48.78), hannover: proj(9.73, 52.37), dresden: proj(13.74, 51.05), nuernberg: proj(11.08, 49.45), bremen: proj(8.80, 53.08), rostock: proj(12.10, 54.09), erfurt: proj(11.03, 50.98), kiel: proj(10.13, 54.32) };
+  function arc(a, b, bend) {
+    var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1];
+    return 'M' + a[0].toFixed(1) + ',' + a[1].toFixed(1) + ' Q' + (mx - dy * bend).toFixed(1) + ',' + (my + dx * bend).toFixed(1) + ' ' + b[0].toFixed(1) + ',' + b[1].toFixed(1);
+  }
+
+  /* ================= Bühnen aufbauen ================= */
+  /* --- Straße in Magdeburg --- */
+  function bergerHouse() {
+    var win = function (id, x, y) {
+      return '<g id="' + id + '"><rect x="' + x + '" y="' + y + '" width="96" height="86" rx="6" fill="' + Y + '" ' + SK + ' stroke-width="7" class="glass"/>' +
+        '<g class="guest" opacity="0">' + helmetIcon(x + 48, y + 66, 0.9) + '</g>' +
+        '<path d="M' + (x + 48) + ',' + y + ' V' + (y + 86) + ' M' + x + ',' + (y + 43) + ' H' + (x + 96) + '" ' + SK + ' stroke-width="5"/></g>';
+    };
+    return '<g id="house">' +
+      '<rect x="1214" y="296" width="46" height="110" fill="' + WH + '" ' + SK + ' stroke-width="7"/>' +
+      '<g id="houseBody"><rect x="820" y="452" width="520" height="368" fill="' + WH + '" ' + SK + ' stroke-width="7"/>' +
+      win('win1', 868, 486) + win('win2', 1196, 486) + win('win3', 868, 626) + win('win4', 1196, 626) +
+      '<g id="door"><rect x="1030" y="672" width="100" height="148" fill="' + INK + '"/><g id="doorLeaf"><rect x="1030" y="672" width="100" height="148" fill="' + DK + '" ' + SK + ' stroke-width="7"/><circle cx="1110" cy="752" r="7" fill="' + Y + '"/></g></g>' +
+      '<g transform="translate(1080,542)"><g id="board"><rect x="-106" y="-30" width="212" height="60" rx="10" fill="' + INK + '"/>' +
+      '<text id="boardTxt" y="8" text-anchor="middle" font-size="21" fill="' + WH + '" style="letter-spacing:.01em">MONTEURZIMMER</text></g></g>' +
+      '</g>' +
+      '<g id="roof"><path d="M784,470 L1080,262 L1376,470 Z" fill="' + INK + '" ' + SK + ' stroke-width="7"/></g>' +
+      '</g>';
+  }
+  function cloud(id, x, y, s) {
+    return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')"><g id="' + id + '"><path d="M-90,30 Q-100,-10 -60,-14 Q-50,-56 -4,-50 Q30,-80 64,-44 Q104,-44 100,-6 Q120,30 84,30 Z" fill="' + WH + '" ' + SK + ' stroke-width="6"/></g></g>';
+  }
+  function tree(x, y, s) {
+    return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')"><rect x="-12" y="-150" width="24" height="150" fill="' + DK + '" ' + SK + ' stroke-width="6"/><circle cy="-210" r="96" fill="' + G2 + '" ' + SK + ' stroke-width="7"/><path d="M-40,-230 Q-20,-270 20,-262" fill="none" stroke="' + WH + '" stroke-width="10" stroke-linecap="round"/></g>';
+  }
+  function crane() {
+    return '<g id="crane" fill="none" stroke="' + INK + '" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path class="cr" d="M-40,70 H40"/><path class="cr" d="M-10,70 V-50"/><path class="cr" d="M10,70 V-50"/><path class="cr" d="M-10,40 L10,10 M10,40 L-10,10 M-10,-20 L10,-50"/>' +
+      '<path class="cr" d="M-70,-50 H90" stroke="' + INK + '"/><path class="cr" d="M0,-80 L-70,-50 M0,-80 L90,-50 M0,-80 V-50"/>' +
+      '<rect class="crw" x="-78" y="-44" width="30" height="22" fill="' + Y + '"/>' +
+      '<path class="cr" d="M70,-50 V10"/><path class="cr" d="M60,10 H80 M70,10 Q70,24 60,24"/>' +
+      '</g>';
+  }
+  function tumbleweed() {
+    return '<g id="tumble"><circle r="40" fill="none" stroke="' + DK + '" stroke-width="6"/><path d="M-30,-12 Q0,-42 30,-8 Q12,28 -20,22 Q-36,0 -12,-14 Q12,-20 16,6 M-34,14 Q-6,4 8,34 M4,-38 Q-10,-14 -34,-18" fill="none" stroke="' + DK + '" stroke-width="5" stroke-linecap="round"/></g>';
+  }
+
+  put('S-street',
+    '<rect x="-400" y="0" width="2720" height="1080" fill="' + BG + '"/>' +
+    '<g id="clouds">' + cloud('cl1', 880, 130, 0.9) + cloud('cl2', 1760, 110, 1.1) + cloud('cl3', 1540, 330, 0.6) + '</g>' +
+    '<g id="ground"><rect x="-400" y="820" width="2720" height="300" fill="' + G1 + '"/><path id="groundLine" d="M-100,820 H2020" stroke="' + INK + '" stroke-width="7" stroke-linecap="round"/></g>' +
+    '<g id="treeA">' + tree(1720, 820, 1) + '</g>' +
+    '<g id="bush"><path d="M1370,820 Q1360,760 1410,764 Q1430,730 1470,758 Q1510,750 1506,820 Z" fill="' + G2 + '" ' + SK + ' stroke-width="6"/></g>' +
+    bergerHouse() +
+    '<g id="stars">' + star('st1', 990, 205, 30) + star('st2', 1080, 170, 36) + star('st3', 1170, 205, 30) + '</g>' +
+    mapPin('pinMD', 1080, 238, 'Magdeburg', 'right') +
+    '<g id="callout" fill="none"><path id="calloutLine" d="M470,380 L360,300 H300" stroke="' + INK + '" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<g transform="translate(190,300)"><g id="calloutTag"><rect x="-150" y="-36" width="260" height="72" rx="36" fill="' + WH + '" ' + SK + ' stroke-width="5"/><text x="-20" y="12" text-anchor="middle" font-size="36" fill="' + INK + '">Herr Berger</text></g></g></g>' +
+    '<g id="tumbleWrap" transform="translate(-120,778)"><g id="tumbleRot">' + tumbleweed() + '</g></g>'
+  );
+  var B = makeChar('S-street', 'b', 'berger', { x: 560, y: 820, s: 0.86 });
+  var WK = makeChar('S-street', 'w', 'worker', { x: 1080, y: 820, s: 0.84, op: 0 });
+  $('w-holdB').insertAdjacentHTML('beforeend', '<g transform="translate(0,10)"><rect x="-44" y="0" width="88" height="62" rx="10" fill="' + INK + '" ' + SK + ' stroke-width="4"/><rect x="-44" y="22" width="88" height="12" fill="' + Y + '"/><path d="M-22,0 Q0,-24 22,0" fill="none" ' + SK + ' stroke-width="6"/></g>');
+  $('b-holdF').insertAdjacentHTML('beforeend', '<g id="bNotes" opacity="0" transform="translate(30,22) rotate(108)"><g transform="translate(-10,6) rotate(-10)" id="bn3">' + banknote('bn3i') + '</g><g transform="translate(-4,2) rotate(-4)" id="bn2">' + banknote('bn2i') + '</g>' + banknote('bn1') + '</g>');
+  put('S-street',
+    '<g transform="translate(1540,190)"><g id="bubble">' +
+    '<circle cx="-70" cy="140" r="12" fill="' + WH + '" ' + SK + ' stroke-width="5"/><circle cx="-44" cy="108" r="18" fill="' + WH + '" ' + SK + ' stroke-width="5"/>' +
+    '<rect x="-150" y="-120" width="300" height="220" rx="60" fill="' + WH + '" ' + SK + ' stroke-width="6"/>' +
+    '<g transform="translate(0,-26) scale(.85)">' + crane() + '</g>' +
+    '<text id="bubbleTxt" y="72" text-anchor="middle" font-size="40">Hamburg</text></g></g>' +
+    '<g transform="translate(1540,210)"><g id="cardA">' + requestCard('cardAi', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>' +
+    '<g transform="translate(700,330)"><g id="coin">' + coin('coinI') + '</g></g>' +
+    '<g transform="translate(1570,420)"><g id="buyCard">' +
+    '<rect x="-200" y="-150" width="400" height="300" rx="28" fill="' + WH + '" ' + SK + ' stroke-width="6"/>' +
+    '<path d="M-200,-94 V-122 Q-200,-150 -172,-150 H172 Q200,-150 200,-122 V-94 Z" fill="' + Y + '" ' + SK + ' stroke-width="6"/>' +
+    '<text x="-172" y="-110" font-size="22" class="ui" style="font-weight:700;letter-spacing:.1em">NEUE ANFRAGE</text>' +
+    '<text x="-172" y="-22" font-size="54">Magdeburg</text>' +
+    '<text x="-172" y="22" font-size="24" class="ui">12 Personen · 3 Wochen</text>' +
+    '<g transform="translate(0,90)"><g id="buyBtn"><rect x="-172" y="-38" width="344" height="76" rx="38" fill="' + Y + '" ' + SK + ' stroke-width="5"/><text y="12" text-anchor="middle" font-size="32">Anfrage kaufen</text></g></g>' +
+    '<circle id="tap2" cx="90" cy="90" r="40" fill="none" stroke="' + INK + '" stroke-width="5" opacity="0"/>' +
+    '</g></g>'
+  );
+
+  /* --- Handy --- */
+  put('S-phone',
+    '<rect width="1920" height="1080" fill="' + BG + '"/>' +
+    '<g transform="translate(1210,540)"><g id="phone">' +
+    '<rect x="-215" y="-420" width="430" height="840" rx="64" fill="' + INK + '"/>' +
+    '<rect x="-195" y="-400" width="390" height="800" rx="48" fill="' + WH + '"/>' +
+    '<rect x="-60" y="-388" width="120" height="26" rx="13" fill="' + INK + '"/>' +
+    '<g transform="translate(-166,-330) scale(.5)">' + logoMark('phoneLogo') + '</g>' +
+    '<text x="-104" y="-294" font-size="27">Monteurzimmer<tspan fill="#D99B00">blick</tspan></text>' +
+    '<path d="M-166,-252 H166" stroke="' + G2 + '" stroke-width="3"/>' +
+    '<text x="-166" y="-206" font-size="22" class="ui" fill="' + G4 + '">Ihr Kunde möchte weiter</text>' +
+    '<g id="phoneCardSlot" transform="translate(0,-70) scale(1.0)"><g id="phoneCard">' + requestCard('phoneCardI', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>' +
+    '<g transform="translate(0,90)"><g id="passBtn"><rect x="-166" y="-40" width="332" height="80" rx="40" fill="' + INK + '"/><text x="-26" y="11" text-anchor="middle" font-size="31" fill="' + WH + '">Weitergeben</text><path d="M92,0 H130 M114,-16 L130,0 L114,16" fill="none" stroke="' + Y + '" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g></g>' +
+    '<circle id="tap1" cx="60" cy="90" r="44" fill="none" stroke="' + Y + '" stroke-width="6" opacity="0"/>' +
+    '<rect x="-166" y="176" width="332" height="84" rx="20" fill="' + BG + '"/><rect x="-142" y="200" width="150" height="14" rx="7" fill="' + G3 + '"/><rect x="-142" y="226" width="220" height="12" rx="6" fill="' + G2 + '"/>' +
+    '<rect x="-166" y="276" width="332" height="84" rx="20" fill="' + BG + '"/><rect x="-142" y="300" width="120" height="14" rx="7" fill="' + G3 + '"/><rect x="-142" y="326" width="200" height="12" rx="6" fill="' + G2 + '"/>' +
+    '</g></g>'
+  );
+  var BP = makeChar('S-phone', 'p', 'berger', { x: 520, y: 1210, s: 1.25 });
+
+  /* --- Karte --- */
+  var MD = CITY.magdeburg, HH = CITY.hamburg;
+  var ARC_MH = arc(MD, HH, -0.42), ARC_HM = arc(HH, MD, -0.42);
+  var LIFT = 104, MDc = [MD[0], MD[1] - LIFT], HHc = [HH[0], HH[1] - LIFT];
+  var ARC_MH_C = arc(MDc, HHc, -0.42), ARC_HM_C = arc(HHc, [MD[0], MD[1] - 70], -0.42);
+  var MAPV = [985, 500, 1.12];   /* Kamera für die Gesamtansicht */
+  put('S-map',
+    '<rect x="-3000" y="-3000" width="8000" height="8000" fill="' + BG + '"/>' +
+    '<defs><mask id="trailMask1" maskUnits="userSpaceOnUse"><path id="trail1" d="' + ARC_MH + '" fill="none" stroke="#fff" stroke-width="16"/></mask>' +
+    '<mask id="trailMask2" maskUnits="userSpaceOnUse"><path id="trail2" d="' + ARC_HM + '" fill="none" stroke="#fff" stroke-width="16"/></mask></defs>' +
+    '<path id="deFill" d="' + DE_PATH + '" fill="' + WH + '"/>' +
+    '<path id="deLine" d="' + DE_PATH + '" fill="none" stroke="' + INK + '" stroke-width="6" stroke-linejoin="round"/>' +
+    '<g id="mapDots"></g>' +
+    '<path id="arcMH" d="' + ARC_MH + '" fill="none" stroke="' + INK + '" stroke-width="5" stroke-dasharray="2 13" stroke-linecap="round" mask="url(#trailMask1)"/>' +
+    '<path id="arcHM" d="' + ARC_HM + '" fill="none" stroke="' + INK + '" stroke-width="5" stroke-dasharray="2 13" stroke-linecap="round" mask="url(#trailMask2)"/>' +
+    '<g transform="scale(.62)">' + mapPin('mpHH', HH[0] / 0.62, HH[1] / 0.62, 'Hamburg', 'left') + mapPin('mpMD', MD[0] / 0.62, MD[1] / 0.62, 'Magdeburg', 'right') + '</g>' +
+    '<g id="mapCardW"><g id="mapCard">' + requestCard('mapCardI', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>' +
+    '<g id="mapNoteW"><g id="mapNote">' + banknote('mapNoteI') + '</g></g>' +
+    '<g transform="translate(' + (MD[0] + 30) + ',' + (MD[1] + 44) + ') scale(.82)"><g id="plusGeld"><rect x="0" y="-38" width="330" height="76" rx="38" fill="' + INK + '"/><text x="165" y="13" text-anchor="middle" font-size="36" fill="' + WH + '"><tspan fill="' + Y + '">+ </tspan>Geld für Sie</text></g></g>' +
+    '<g id="burst" transform="translate(' + MD[0] + ',' + (MD[1] - 25) + ')"></g>'
+  );
+  (function () {
+    var b = '', i, a;
+    for (i = 0; i < 10; i++) { a = i * Math.PI / 5; b += '<path class="ray" d="M' + (Math.cos(a) * 24).toFixed(1) + ',' + (Math.sin(a) * 24).toFixed(1) + ' L' + (Math.cos(a) * 44).toFixed(1) + ',' + (Math.sin(a) * 44).toFixed(1) + '" stroke="' + Y + '" stroke-width="5" stroke-linecap="round"/>'; }
+    $('burst').innerHTML = b;
+  })();
+
+  (function () {
+    var d = '';
+    Object.keys(CITY).forEach(function (k) {
+      if (k === 'magdeburg' || k === 'hamburg') return;
+      d += '<circle cx="' + CITY[k][0].toFixed(1) + '" cy="' + CITY[k][1].toFixed(1) + '" r="7" fill="' + G3 + '"/>';
+    });
+    $('mapDots').innerHTML = d;
+  })();
+
+  /* --- Hamburg --- */
+  function hhHouse() {
+    var w = '', r, c;
+    for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) w += '<rect x="' + (330 + c * 96) + '" y="' + (430 + r * 110) + '" width="60" height="74" rx="5" fill="' + Y + '" ' + SK + ' stroke-width="6"/>';
+    return '<g id="hhHouse">' +
+      '<path d="M300,820 V380 H330 V330 H360 V280 H390 V230 H420 V190 H548 V230 H578 V280 H608 V330 H638 V380 H668 V820 Z" fill="' + WH + '" ' + SK + ' stroke-width="7"/>' +
+      '<circle cx="484" cy="300" r="34" fill="' + Y + '" ' + SK + ' stroke-width="6"/>' + w +
+      '<rect x="444" y="740" width="80" height="80" fill="' + DK + '" ' + SK + ' stroke-width="6"/>' +
+      '</g>';
+  }
+  put('S-hh',
+    '<rect width="1920" height="1080" fill="' + BG + '"/>' +
+    cloud('hcl1', 1720, 330, 0.8) + cloud('hcl2', 820, 120, 0.7) +
+    '<rect x="-10" y="820" width="1940" height="270" fill="' + G1 + '"/><path d="M-10,820 H1930" stroke="' + INK + '" stroke-width="7"/>' +
+    hhHouse() + mapPin('pinHH', 484, 150, 'Hamburg', 'right') +
+    '<g transform="translate(1000,262)"><g id="badge"><path d="M0,-58 L46,-40 V2 C46,34 24,54 0,64 C-24,54 -46,34 -46,2 V-40 Z" fill="' + Y + '" ' + SK + ' stroke-width="6"/><path d="M-20,2 L-5,18 L22,-14" fill="none" ' + SK + ' stroke-width="8"/></g></g>' +
+    '<g transform="translate(990,376)"><g id="hhCard">' + requestCard('hhCardI', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>'
+  );
+  var LD = makeChar('S-hh', 'l', 'lady', { x: 880, y: 820, s: 0.86 });
+  var WK2 = makeChar('S-hh', 'w2', 'worker', { x: 2150, y: 820, s: 0.84, face: -1 });
+  $('w2-holdB').insertAdjacentHTML('beforeend', '<g transform="translate(0,10)"><rect x="-44" y="0" width="88" height="62" rx="10" fill="' + INK + '" ' + SK + ' stroke-width="4"/><rect x="-44" y="22" width="88" height="12" fill="' + Y + '"/><path d="M-22,0 Q0,-24 22,0" fill="none" ' + SK + ' stroke-width="6"/></g>');
+
+  /* --- Zusammenfassung --- */
+  function rowIcon(kind) {
+    if (kind === 1) return '<rect x="-30" y="-22" width="44" height="30" rx="6" fill="' + WH + '" ' + SK + ' stroke-width="5"/><path d="M4,14 H34 M24,4 L34,14 L24,24" fill="none" ' + SK + ' stroke-width="6"/>';
+    if (kind === 2) return '<circle r="26" fill="' + WH + '" ' + SK + ' stroke-width="5"/><text y="12" text-anchor="middle" font-size="34">€</text>';
+    return '<path d="M-28,-2 L0,-26 L28,-2 V28 H-28 Z" fill="' + WH + '" ' + SK + ' stroke-width="5"/><rect x="-10" y="4" width="20" height="18" fill="' + INK + '"/>';
+  }
+  function row(id, y, kind, txt) {
+    return '<g transform="translate(200,' + y + ')"><g id="' + id + '"><g class="ico"><rect x="-56" y="-56" width="112" height="112" rx="26" fill="' + Y + '" ' + SK + ' stroke-width="6"/>' + rowIcon(kind) + '</g>' +
+      '<g class="txtClip"><text x="96" y="34" font-size="100" style="letter-spacing:-.035em">' + txt + '</text></g></g></g>';
+  }
+  put('S-recap',
+    '<rect width="1920" height="1080" fill="' + BG + '"/>' +
+    '<g transform="translate(1250,110) scale(.84)"><g id="net"><path d="' + DE_PATH + '" fill="' + WH + '" stroke="' + INK + '" stroke-width="7" stroke-linejoin="round" transform="translate(-634.5,-100)"/><g id="netArcs" transform="translate(-634.5,-100)"></g><g id="netPins" transform="translate(-634.5,-100)"></g></g></g>' +
+    row('r1', 330, 1, 'Weitergeben') + row('r2', 530, 2, 'Mitverdienen') + row('r3', 730, 3, 'Leerstand füllen')
+  );
+  var NET_PAIRS = [['hamburg', 'magdeburg'], ['magdeburg', 'leipzig'], ['koeln', 'frankfurt'], ['berlin', 'dresden'], ['muenchen', 'nuernberg'], ['dortmund', 'hannover'], ['stuttgart', 'muenchen'], ['bremen', 'hamburg'], ['erfurt', 'frankfurt'], ['rostock', 'berlin'], ['leipzig', 'nuernberg'], ['kiel', 'hamburg']];
+  (function () {
+    var arcs = '', pins = '';
+    NET_PAIRS.forEach(function (pr, i) {
+      arcs += '<path id="na' + i + '" d="' + arc(CITY[pr[0]], CITY[pr[1]], 0.3) + '" fill="none" stroke="' + INK + '" stroke-width="5" stroke-linecap="round"/>' +
+        '<g id="nc' + i + '" transform="translate(' + CITY[pr[0]][0].toFixed(1) + ',' + CITY[pr[0]][1].toFixed(1) + ')"><rect x="-22" y="-14" width="44" height="28" rx="6" fill="' + Y + '" ' + SK + ' stroke-width="4"/></g>';
+    });
+    Object.keys(CITY).forEach(function (k, i) {
+      pins += '<g transform="translate(' + CITY[k][0].toFixed(1) + ',' + CITY[k][1].toFixed(1) + ')"><g id="np' + i + '"><circle r="13" fill="' + INK + '"/><circle r="5.5" fill="' + Y + '"/></g></g>';
+    });
+    $('netArcs').innerHTML = arcs; $('netPins').innerHTML = pins;
+  })();
+
+  /* --- Abschluss --- */
+  put('S-cta',
+    '<rect width="1920" height="1080" fill="' + WH + '"/>' +
+    '<g id="ctaMarkW"><g id="ctaMark">' + logoMark('ctaLogo') + '</g></g>' +
+    '<g id="wordClipW"><clipPath id="wordClip"><rect id="wordClipR" x="0" y="300" width="0" height="220"/></clipPath>' +
+    '<text id="word" y="470" font-size="124" clip-path="url(#wordClip)" style="letter-spacing:-.04em">Monteurzimmer<tspan fill="' + Y + '">blick</tspan></text></g>' +
+    '<g transform="translate(960,640)"><g id="ctaBtn"><rect x="-270" y="-60" width="540" height="120" rx="60" fill="' + INK + '"/><text x="-24" y="15" text-anchor="middle" font-size="44" fill="' + WH + '">Kostenlos starten</text><path d="M176,0 H222 M202,-20 L222,0 L202,20" fill="none" stroke="' + Y + '" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g></g>' +
+    '<circle id="tap3" cx="1080" cy="660" r="54" fill="none" stroke="' + Y + '" stroke-width="7" opacity="0"/>' +
+    '<text id="url" class="mono" x="960" y="800" text-anchor="middle" font-size="42" fill="' + INK + '"></text>' +
+    '<rect id="caret" x="0" y="766" width="5" height="44" fill="' + INK + '" opacity="0"/>'
+  );
+  var BC = makeChar('S-cta', 'bc', 'berger', { x: 300, y: 1150, s: 1.08 });
+  var WC = makeChar('S-cta', 'wc', 'worker', { x: 1620, y: 1150, s: 1.06, face: -1 });
+
+  /* --- Einblendungen --- */
+  var CAPS = {};
+  function caption(id, lines, x, y, size, align) {
+    var el = document.createElement('div');
+    el.className = 'cap'; el.id = id;
+    el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.fontSize = size + 'px';
+    if (align === 'center') { el.style.left = '0'; el.style.width = '1920px'; el.style.textAlign = 'center'; }
+    el.innerHTML = lines.map(function (ln) {
+      return '<span class="ln">' + ln.split(' ').map(function (w) {
+        var hl = w.charAt(0) === '*';
+        if (hl) w = w.slice(1);
+        return '<span class="m"><span class="w' + (hl ? ' hl' : '') + '">' + w + '</span></span>';
+      }).join(' ') + '</span>';
+    }).join('');
+    $('caps').appendChild(el);
+    CAPS[id] = el;
+    return el;
+  }
+  caption('capWeg1', ['Anfrage weg.'], 120, 96, 104);
+  caption('capWeg2', ['Geld weg.'], 120, 210, 104);
+  caption('capPass', ['Weitergeben.'], 120, 150, 112);
+  caption('capGeprueft', ['Geprüfter Partner.'], 1080, 120, 84);
+  caption('capOhne', ['Ohne neues', 'Zimmer.'], 120, 96, 100);
+  caption('capVoll', ['Leerstand', 'gefüllt.'], 120, 96, 100);
+  caption('capMehr', ['Mehr aus', '*jedem *Kunden.'], 120, 330, 150);
+
+  /* ================= Timeline ================= */
+  var tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
+
+  function show(el, t) { tl.set(el, { visibility: 'visible' }, t); }
+  function hideAt(el, t) { tl.set(el, { visibility: 'hidden' }, t); }
+  function pop(el, t, o) {
+    o = o || {};
+    tl.fromTo(el, { scale: o.from == null ? 0 : o.from, opacity: 0, rotation: o.rot || 0, transformOrigin: o.origin || '50% 50%' },
+      { scale: 1, opacity: 1, rotation: 0, duration: o.dur || 0.55, ease: o.ease || 'back.out(2.4)' }, t);
+  }
+  function unpop(el, t, o) {
+    o = o || {};
+    tl.to(el, { scale: o.to == null ? 0 : o.to, opacity: 0, duration: o.dur || 0.3, ease: o.ease || 'back.in(2)', transformOrigin: o.origin || '50% 50%' }, t);
+  }
+  function capIn(id, t, st) {
+    var ws = CAPS[id].querySelectorAll('.w');
+    tl.set(CAPS[id], { visibility: 'visible' }, t);
+    tl.fromTo(ws, { yPercent: 110 }, { yPercent: 0, duration: 0.7, ease: 'expo.out', stagger: st == null ? 0.08 : st }, t);
+  }
+  function capOut(id, t) {
+    var ws = CAPS[id].querySelectorAll('.w');
+    tl.to(ws, { yPercent: -110, duration: 0.4, ease: 'power3.in', stagger: 0.04 }, t);
+    tl.set(CAPS[id], { visibility: 'hidden' }, t + 0.6);
+  }
+  gsap.set('.cap', { visibility: 'hidden' });
+  function walk(c, t, dur, toX, stepDur) {
+    var steps = dur / (stepDur || 0.3);
+    tl.to(c.p, { x: toX, duration: dur, ease: 'power1.inOut' }, t);
+    tl.to(c.p, { walkPhase: '+=' + (Math.PI * steps).toFixed(3), duration: dur, ease: 'none' }, t);
+    tl.to(c.p, { walkAmp: 1, duration: 0.18, ease: 'power1.out' }, t);
+    tl.to(c.p, { walkAmp: 0, duration: 0.22, ease: 'power1.in' }, t + dur - 0.22);
+  }
+  function wave(c, t, n, arm) {
+    var up = arm === 'B' ? 'armBu' : 'armFu', lo = arm === 'B' ? 'armBl' : 'armFl', sgn = arm === 'B' ? -1 : 1;
+    var o1 = {}, o2 = {}, o3 = {};
+    o1[up] = -150 * sgn; o1[lo] = -12 * sgn; o1.duration = 0.35; o1.ease = 'back.out(1.8)';
+    tl.to(c.p, o1, t);
+    for (var i = 0; i < n; i++) {
+      o2 = {}; o2[lo] = 22 * sgn; o2.duration = 0.2; o2.ease = 'sine.inOut';
+      o3 = {}; o3[lo] = -22 * sgn; o3.duration = 0.2; o3.ease = 'sine.inOut';
+      tl.to(c.p, o2, t + 0.35 + i * 0.4);
+      tl.to(c.p, o3, t + 0.55 + i * 0.4);
+    }
+    var back = {}; back[up] = -7 * sgn; back[lo] = 8 * sgn; back.duration = 0.4; back.ease = 'power2.inOut';
+    tl.to(c.p, back, t + 0.35 + n * 0.4);
+  }
+  function hop(c, t, h) {
+    tl.to(c.p, { sy: 0.9, duration: 0.1, ease: 'power2.out' }, t);
+    tl.to(c.p, { y: '-=' + (h || 30), sy: 1.05, duration: 0.18, ease: 'power2.out' }, t + 0.1);
+    tl.to(c.p, { y: '+=' + (h || 30), sy: 1, duration: 0.2, ease: 'power2.in' }, t + 0.28);
+    tl.to(c.p, { sy: 0.94, duration: 0.07 }, t + 0.48);
+    tl.to(c.p, { sy: 1, duration: 0.25, ease: 'back.out(3)' }, t + 0.55);
+  }
+  function popChar(c, t) {
+    tl.fromTo(c.p, { sy: 0.2, op: 0 }, { sy: 1, op: 1, duration: 0.55, ease: 'back.out(2.6)' }, t);
+  }
+  function nod(c, t, n) {
+    for (var i = 0; i < (n || 2); i++) {
+      tl.to(c.p, { head: 9, headY: 3, duration: 0.16, ease: 'sine.inOut' }, t + i * 0.34);
+      tl.to(c.p, { head: -2, headY: 0, duration: 0.18, ease: 'sine.inOut' }, t + 0.16 + i * 0.34);
+    }
+    tl.to(c.p, { head: 0, duration: 0.2 }, t + (n || 2) * 0.34);
+  }
+  function mapCam(px, py, s, t, dur, ease) {
+    tl.to('#mapcam', { x: 960 - px * s, y: 540 - py * s, scale: s, duration: dur, ease: ease || 'power3.inOut' }, t);
+  }
+  function tap(el, t) {
+    tl.fromTo(el, { attr: { r: 10 }, opacity: 1 }, { attr: { r: 70 }, opacity: 0, duration: 0.55, ease: 'power2.out', immediateRender: false }, t);
+  }
+  function press(el, t) {
+    tl.to(el, { scale: 0.92, duration: 0.09, ease: 'power2.out', transformOrigin: '50% 50%' }, t);
+    tl.to(el, { scale: 1, duration: 0.35, ease: 'back.out(3)' }, t + 0.09);
+  }
+
+  /* Startzustände */
+  gsap.set('#L-street', { visibility: 'visible' });
+  gsap.set('#mapcam', { x: 0, y: 0, scale: 1 });
+  gsap.set(['#stars g[id^=st]', '#bubble', '#cardA', '#coin', '#buyCard', '#calloutTag', '#pinMD .lbl'], { opacity: 0 });
+  /* Karten, Geld und Münze skalieren um ihre Mitte (GSAP nimmt bei SVG sonst die linke obere Ecke) */
+  gsap.set(['#mapCard', '#mapNote', '#hhCard', '#cardA', '#coin', '#phoneCard', '#buyCard', '#plusGeld'], { transformOrigin: '50% 50%' });
+
+  /* ---------- Szene 1: Herr Berger in Magdeburg ---------- */
+  (function () {
+    tl.fromTo('#groundLine', { drawSVG: '50% 50%' }, { drawSVG: '0% 100%', duration: 0.7, ease: 'expo.out' }, 0);
+    tl.fromTo('#houseBody', { scaleY: 0, transformOrigin: '50% 100%' }, { scaleY: 1, duration: 0.6, ease: 'back.out(1.6)' }, 0.08);
+    tl.fromTo('#roof', { y: -420, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'bounce.out' }, 0.26);
+    ['#win1', '#win3', '#win2', '#win4'].forEach(function (w, i) { pop(w, 0.5 + i * 0.07, { dur: 0.4 }); });
+    pop('#board', 0.7, { dur: 0.45 });
+    tl.fromTo('#house > rect', { scaleY: 0, transformOrigin: '50% 100%' }, { scaleY: 1, duration: 0.35 }, 0.6);
+    pop('#treeA', 0.35, { origin: '50% 100%' });
+    pop('#bush', 0.5, { origin: '50% 100%' });
+    ['#cl1', '#cl2', '#cl3'].forEach(function (c, i) { tl.fromTo(c, { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power2.out' }, 0.2 + i * 0.15); });
+    tl.to('#clouds', { x: 70, duration: 31, ease: 'none' }, 0);
+    gsap.set('#S-street', { transformOrigin: '50% 72%' });
+    tl.fromTo('#S-street', { scale: 1 }, { scale: 1.05, duration: 17.5, ease: 'none' }, 0);
+    sfx('whoosh', 0.02, 0.5); sfx('thud', 0.55, 0.6); sfx('pop', 0.5, 0.35); sfx('pop', 0.64, 0.35);
+    popChar(B, 0.55); sfx('pop', 0.6, 0.6);
+    wave(B, at('Herr') - 0.05, 3, 'F');
+    tl.fromTo('#calloutLine', { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: 0.4, ease: 'power2.out' }, at('Herr'));
+    pop('#calloutTag', at('Herr') + 0.25, { dur: 0.5 }); sfx('pop', at('Herr') + 0.25, 0.7);
+    tl.to('#calloutLine', { drawSVG: '100% 100%', duration: 0.35, ease: 'power2.in' }, at('Er') + 0.6);
+    tl.to('#calloutLine', { opacity: 0, duration: 0.01 }, at('Er') + 0.95);
+    unpop('#calloutTag', at('Er') + 0.5);
+    tl.to(B.p, { head: 8, duration: 0.4, ease: 'sine.inOut' }, at('Monteurzimmer') - 0.2);
+    tl.fromTo('#board', { scaleY: 1 }, { scaleY: 0, duration: 0.14, ease: 'power2.in', immediateRender: false }, at('Monteurzimmer') - 0.1);
+    tl.to('#board', { scaleY: 1, duration: 0.4, ease: 'back.out(3)' }, at('Monteurzimmer') + 0.04);
+    T.flash = at('Monteurzimmer') - 0.1;
+    sfx('tick', at('Monteurzimmer'), 0.5);
+    tl.to(B.p, { head: 0, duration: 0.4 }, at('Magdeburg'));
+    tl.fromTo('#pinMD .pin', { y: -260, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: 'bounce.out' }, at('Magdeburg') - 0.35);
+    tl.fromTo('#pinMD .lbl', { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: 'back.out(2)' }, at('Magdeburg') + 0.05);
+    sfx('pop', at('Magdeburg') - 0.05, 0.7);
+  })();
+
+  /* ---------- Szene 2: Die Baustelle zieht weiter ---------- */
+  (function () {
+    var t = at('Seine');
+    unpop('#pinMD', t - 0.25, { origin: '50% 100%' });
+    tl.to('#doorLeaf', { scaleX: 0.12, transformOrigin: '0% 50%', duration: 0.35, ease: 'power2.out' }, t - 0.1);
+    tl.set(WK.p, { op: 1 }, t + 0.12);
+    tl.fromTo(WK.p, { s: 0.6, y: 800 }, { s: 0.84, y: 820, duration: 0.35, ease: 'power2.out', immediateRender: false }, t + 0.12);
+    walk(WK, t + 0.3, 1.2, 1500, 0.3);
+    tl.to('#doorLeaf', { scaleX: 1, duration: 0.3, ease: 'power2.in' }, t + 0.9);
+    sfx('whoosh', t + 0.2, 0.25);
+    tl.to(WK.p, { face: -1, duration: 0.14, ease: 'none' }, t + 1.55);
+    wave(WK, t + 1.6, 2, 'F');
+    tl.to(B.p, { head: -4, duration: 0.3 }, t + 1.6);
+    var tz = at('zufrieden');
+    ['#st1', '#st2', '#st3'].forEach(function (s, i) { pop(s, tz - 0.1 + i * 0.13, { rot: -120, dur: 0.6 }); sfx('pop', tz - 0.1 + i * 0.13, 0.45 + i * 0.1); });
+    ['#st1', '#st2', '#st3'].forEach(function (s, i) { tl.to(s, { y: -10, duration: 0.8, ease: 'sine.inOut', yoyo: true, repeat: 3 }, tz + 0.6 + i * 0.1); });
+    var tb = at('doch');
+    ['#st1', '#st2', '#st3'].forEach(function (s, i) { unpop(s, tb - 0.1 + i * 0.05, { dur: 0.25 }); });
+    pop('#bubble', tb + 0.05, { from: 0.2, origin: '0% 100%', dur: 0.6 }); sfx('pop', tb + 0.05, 0.7);
+    tl.set('#crane .crw', { opacity: 0 }, 0);
+    tl.fromTo('#crane .cr', { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.5, ease: 'power2.inOut', stagger: 0.09 }, at('Baustelle'));
+    tl.to('#crane .crw', { opacity: 1, duration: 0.2 }, at('Baustelle') + 0.5);
+    tl.fromTo('#bubbleTxt', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'back.out(2)' }, at('Hamburg') - 0.05);
+    sfx('tick', at('Hamburg'), 0.5);
+    tl.to(WK.p, { head: -8, duration: 0.3 }, tb);
+  })();
+
+  /* ---------- Szene 3: Früher war die Anfrage weg ---------- */
+  (function () {
+    var t = at('Dort');
+    unpop('#bubble', t - 0.1, { dur: 0.25 });
+    tl.set('#cardA', { opacity: 1 }, t);
+    tl.fromTo('#cardA', { scale: 0.2, x: 0, y: 0, rotation: -10 }, { scale: 0.62, x: -790, y: 40, rotation: 4, duration: 0.8, ease: 'power3.inOut', immediateRender: false }, t);
+    sfx('whoosh', t, 0.4);
+    tl.to(WK.p, { head: 0, face: -1, duration: 0.2 }, t);
+    tl.to('#cardA', { rotation: -3, duration: 0.5, ease: 'sine.inOut', yoyo: true, repeat: 3 }, t + 0.8);
+    var ts = at('kein');
+    tl.to(B.p, { armFu: -40, armFl: -95, armBu: 40, armBl: 95, bob: -6, head: 10, duration: 0.3, ease: 'back.out(2)' }, ts - 0.1);
+    tl.to(B.p, { head: -8, duration: 0.18, ease: 'sine.inOut', yoyo: true, repeat: 3 }, ts + 0.2);
+    tl.to(B.p, { armFu: -7, armFl: 8, armBu: 7, armBl: -8, bob: 0, head: 0, duration: 0.35 }, ts + 1.1);
+    var tf = at('Früher');
+    tl.fromTo('#L-street', { filter: 'saturate(1) brightness(1)' }, { filter: 'saturate(0) brightness(0.97)', duration: 0.6, ease: 'power2.inOut' }, tf - 0.15);
+    sfx('down', tf - 0.1, 0.45);
+    tl.to(WK.p, { face: 1, duration: 0.14, ease: 'none' }, tf + 0.1);
+    walk(WK, tf + 0.2, 1.7, 2150, 0.3);
+    var tw = at('weg');
+    tl.to('#cardA', { y: -140, x: -720, rotation: 18, scale: 0.4, opacity: 0, duration: 0.5, ease: 'power2.in' }, tw - 0.35);
+    sfx('whoosh', tw - 0.3, 0.35);
+    capIn('capWeg1', tw - 0.05);
+    var tg = at('Geld');
+    pop('#coin', at('und', 1) - 0.1, { dur: 0.45 }); sfx('pop', at('und', 1) - 0.1, 0.5);
+    tl.to('#coin', { y: 160, rotation: 40, scale: 0.6, opacity: 0, duration: 0.55, ease: 'power2.in' }, tg + 0.35);
+    sfx('drop', tg + 0.4, 0.5);
+    capIn('capWeg2', tg + 0.25);
+    tl.to(B.p, { head: 12, headY: 6, duration: 0.5, ease: 'power2.inOut' }, tg);
+  })();
+
+  /* ---------- Übergang: gelber Wischer ---------- */
+  function wipeAt(t) {
+    tl.set('#wipe', { visibility: 'visible' }, t);
+    tl.fromTo('#wipe', { x: 0 }, { x: -2000 - 400, duration: 0.45, ease: 'power3.in' }, t);
+    tl.to('#wipe', { x: -2000 - 3200, duration: 0.5, ease: 'power3.out' }, t + 0.45);
+    tl.set('#wipe', { visibility: 'hidden' }, t + 1.0);
+    sfx('whoosh', t + 0.1, 0.8);
+  }
+
+  /* ---------- Szene 4: Heute – weitergeben ---------- */
+  (function () {
+    var t = at('Heute') - 0.85;
+    wipeAt(t);
+    var sw = t + 0.45;
+    capOut('capWeg1', sw - 0.3); capOut('capWeg2', sw - 0.3);
+    hideAt('#L-street', sw);
+    tl.set('#L-street', { filter: 'saturate(1) brightness(1)' }, sw);
+    show('#L-phone', sw);
+    tl.fromTo('#phone', { y: 300, rotation: 8, scale: 0.9 }, { y: 0, rotation: 0, scale: 1, duration: 0.8, ease: 'expo.out' }, sw + 0.05);
+    tl.fromTo(BP.p, { x: 420 }, { x: 700, duration: 0.8, ease: 'expo.out' }, sw + 0.05);
+    tl.fromTo('#phoneCard', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(2.2)' }, at('Heute') + 0.1);
+    sfx('pop', at('Heute') + 0.1, 0.6);
+    var tp = at('weiter', 2);
+    tl.to(BP.p, { armFu: -96, armFl: -8, duration: 0.35, ease: 'back.out(1.8)' }, tp - 0.45);
+    tl.to(BP.p, { lean: 3, duration: 0.3 }, tp - 0.4);
+    press('#passBtn', tp); tap('#tap1', tp); sfx('click', tp, 0.9);
+    capIn('capPass', tp - 0.05);
+    /* Karte hebt ab und schwebt, das Logo zuckt beim Namen */
+    tl.to('#phoneCard', { y: -60, scale: 1.08, duration: 0.35, ease: 'back.out(2)' }, tp + 0.2);
+    tl.to('#phoneCard', { y: -74, duration: 0.5, ease: 'sine.inOut', yoyo: true, repeat: 2 }, tp + 0.55);
+    var tn = at('Monteurzimmerblick', 1);
+    tl.fromTo('#phoneLogo', { scale: 1, transformOrigin: '50% 50%' }, { scale: 1.35, duration: 0.18, ease: 'power2.out', yoyo: true, repeat: 1 }, tn - 0.05);
+    sfx('tick', tn - 0.05, 0.5);
+    var tm = tn + 0.35;
+    tl.to('#phoneCard', { y: -900, scale: 1.25, rotation: 12, duration: 0.42, ease: 'power3.in' }, tm - 0.3);
+    sfx('whoosh', tm - 0.3, 0.6);
+    tl.to(BP.p, { armFu: -7, armFl: 8, lean: 0, duration: 0.3 }, tp + 0.5);
+    capOut('capPass', tm - 0.25);
+    /* Schnitt auf die Karte */
+    show('#L-map', tm);
+    tl.fromTo('#L-map', { clipPath: 'circle(0px at 1210px 470px)' }, { clipPath: 'circle(2300px at 1210px 470px)', duration: 0.8, ease: 'power3.inOut' }, tm);
+    hideAt('#L-phone', tm + 0.8);
+    sfx('whoosh', tm, 0.6);
+    tl.set('#mapcam', { x: 960 - MD[0] * 2.6, y: 540 - MD[1] * 2.6, scale: 2.6 }, tm);
+    mapCam(MAPV[0], MAPV[1], MAPV[2], tm + 0.1, 1.1, 'power3.inOut');
+    tl.fromTo('#deLine', { drawSVG: '0%' }, { drawSVG: '100%', duration: 1.3, ease: 'power2.inOut' }, tm);
+    tl.fromTo('#deFill', { opacity: 0 }, { opacity: 1, duration: 0.6 }, tm + 0.3);
+    tl.fromTo('#mapDots circle', { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.3, ease: 'back.out(3)', stagger: 0.04 }, tm + 0.5);
+    pop('#mpMD', tm + 0.2, { origin: '50% 100%' }); sfx('pop', tm + 0.25, 0.5);
+    pop('#mpHH', tm + 0.55, { origin: '50% 100%' }); sfx('pop', tm + 0.6, 0.5);
+    /* Karte fliegt nach Hamburg */
+    gsap.set('#mapCardW', { x: MDc[0], y: MDc[1] });
+    tl.fromTo('#mapCard', { scale: 0.7, opacity: 0, y: -520, rotation: 14 }, { scale: 0.42, opacity: 1, y: 0, rotation: 0, duration: 0.5, ease: 'back.out(1.4)' }, tm + 0.05);
+    sfx('pop', tm + 0.5, 0.5);
+    var tf = tm + 0.6;
+    tl.to('#mapCardW', { motionPath: { path: ARC_MH_C }, duration: 1.1, ease: 'power2.inOut' }, tf);
+    tl.fromTo('#trail1', { drawSVG: '0%' }, { drawSVG: '100%', duration: 1.1, ease: 'power2.inOut' }, tf);
+    tl.to('#mapCard', { rotation: -8, duration: 0.55, ease: 'sine.inOut', yoyo: true, repeat: 1 }, tf);
+    sfx('whoosh', tf + 0.1, 0.7);
+    tl.to('#mapCard', { scale: 0.5, duration: 0.12, ease: 'power2.out' }, tf + 1.1);
+    tl.to('#mapCard', { scale: 0.42, duration: 0.4, ease: 'back.out(3)' }, tf + 1.22);
+    sfx('pop', tf + 1.1, 0.6);
+  })();
+
+  /* ---------- Szene 5: Geprüfte Vermieterin in Hamburg ---------- */
+  (function () {
+    var t = at('Eine') - 0.55;
+    mapCam(HH[0], HH[1] - 40, 4.2, t - 0.1, 0.8, 'power3.in');
+    show('#L-hh', t + 0.2);
+    tl.fromTo('#L-hh', { clipPath: 'circle(0px at 960px 420px)' }, { clipPath: 'circle(2300px at 960px 420px)', duration: 0.75, ease: 'power3.inOut' }, t + 0.2);
+    hideAt('#L-map', t + 0.95);
+    sfx('whoosh', t + 0.15, 0.7);
+    pop('#pinHH', t + 0.5, { origin: '50% 100%' });
+    popChar(LD, t + 0.3); sfx('pop', t + 0.3, 0.5);
+    wave(LD, at('Vermieterin') + 0.05, 1, 'F');
+    pop('#badge', at('geprüfte') + 0.9, { rot: -30, dur: 0.6 }); sfx('pop', at('geprüfte') + 0.9, 0.7);
+    capIn('capGeprueft', at('geprüfte') + 0.05);
+    /* Karte kommt geflogen und wird gefangen */
+    var tc = at('übernimmt');
+    gsap.set('#hhCard', { opacity: 0, x: 900, y: -420, scale: 0.5 });
+    tl.set('#hhCard', { opacity: 1 }, tc - 0.7);
+    tl.to('#hhCard', { motionPath: { path: [{ x: 900, y: -420 }, { x: 380, y: -260 }, { x: 0, y: 0 }], curviness: 1.2 }, rotation: -6, duration: 0.75, ease: 'power2.out' }, tc - 0.7);
+    sfx('whoosh', tc - 0.7, 0.5);
+    tl.to(LD.p, { armFu: -125, armFl: -18, armBu: -115, armBl: -10, head: -10, duration: 0.35, ease: 'back.out(2)' }, tc - 0.4);
+    hop(LD, tc + 0.05, 24);
+    tl.to('#hhCard', { y: 16, duration: 0.14, ease: 'power2.out' }, tc + 0.05);
+    tl.to('#hhCard', { y: 0, duration: 0.3, ease: 'back.out(3)' }, tc + 0.19);
+    sfx('pop', tc + 0.05, 0.6);
+    capOut('capGeprueft', at('Kunden', 2) + 0.2);
+    /* Der Kunde kommt an */
+    walk(WK2, tc + 0.1, 0.9, 1330, 0.28);
+    wave(WK2, tc + 1.05, 1, 'F');
+    tl.to('#hhCard', { y: 300, x: -470, scale: 0.12, opacity: 0, duration: 0.45, ease: 'power3.in' }, tc + 0.8);
+    tl.to(LD.p, { armFu: -7, armFl: 8, armBu: 7, armBl: -8, head: 0, duration: 0.4 }, tc + 0.85);
+    wave(LD, tc + 1.2, 1, 'F');
+  })();
+
+  /* ---------- Szene 6: Herr Berger verdient mit ---------- */
+  (function () {
+    var t = at('und', 2) - 0.5;
+    show('#L-map', t);
+    tl.set('#mapCard', { opacity: 0 }, t);
+    tl.to('#L-hh', { clipPath: 'circle(0px at 960px 420px)', duration: 0.6, ease: 'power3.in' }, t);
+    hideAt('#L-hh', t + 0.6);
+    sfx('whoosh', t, 0.6);
+    mapCam(MAPV[0], MAPV[1], MAPV[2], t + 0.15, 0.8, 'power3.out');
+    gsap.set('#mapNoteW', { x: HHc[0], y: HHc[1] });
+    var tn = t + 0.55;
+    tl.fromTo('#mapNote', { scale: 0, opacity: 0 }, { scale: 0.62, opacity: 1, duration: 0.4, ease: 'back.out(2.4)' }, tn);
+    sfx('pop', tn, 0.5);
+    tl.to('#mapNoteW', { motionPath: { path: ARC_HM_C }, duration: 1.1, ease: 'power2.inOut' }, tn + 0.2);
+    tl.to('#mapNote', { rotation: 10, duration: 0.55, ease: 'sine.inOut', yoyo: true, repeat: 1 }, tn + 0.2);
+    tl.fromTo('#trail2', { drawSVG: '0%' }, { drawSVG: '100%', duration: 1.1, ease: 'power2.inOut' }, tn + 0.2);
+    sfx('whoosh', tn + 0.25, 0.6);
+    var tland = tn + 1.3;
+    tl.to('#mapNote', { scale: 0.5, duration: 0.3, ease: 'back.out(3)' }, tland);
+    tl.fromTo('#burst .ray', { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: 0.25, ease: 'power2.out' }, tland);
+    tl.to('#burst .ray', { drawSVG: '100% 100%', duration: 0.3, ease: 'power2.in' }, tland + 0.25);
+    pop('#plusGeld', tland + 0.05, { origin: '0% 50%' });
+    sfx('ding', tland, 1);
+    /* zurück zu Herrn Berger */
+    var tb = tland + 0.6;
+    mapCam(MD[0], MD[1] - 20, 4.2, tb - 0.2, 0.7, 'power3.in');
+    show('#L-street', tb);
+    tl.set('#L-street', { clipPath: 'circle(0px at 960px 460px)', zIndex: 5 }, tb);
+    tl.to('#L-street', { clipPath: 'circle(2300px at 960px 460px)', duration: 0.7, ease: 'power3.inOut' }, tb);
+    hideAt('#L-map', tb + 0.7);
+    sfx('whoosh', tb, 0.6);
+    /* Bühne umbauen: Magdeburg ohne Kunde, mit Geld */
+    tl.set(WK.p, { op: 0 }, tb - 0.1);
+    tl.set('#S-street', { scale: 1 }, tb - 0.05);
+    tl.to('#S-street', { scale: 1.04, duration: 9, ease: 'none' }, tb);
+    tl.set(B.p, { head: 0, headY: 0, armFu: -30, armFl: -88, face: 1 }, tb - 0.05);
+    tl.set('#bNotes', { opacity: 1 }, tb - 0.05);
+    gsap.set('#bn2, #bn3', { opacity: 0 });
+    var to = at('ohne');
+    capIn('capOhne', to);
+    tl.fromTo('#bn2', { opacity: 0, y: -60 }, { opacity: 1, y: 2, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, to + 0.45);
+    tl.fromTo('#bn3', { opacity: 0, y: -60 }, { opacity: 1, y: 6, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, to + 0.85);
+    sfx('pop', to + 0.45, 0.4); sfx('pop', to + 0.85, 0.45);
+    nod(B, to + 0.3, 2);
+  })();
+
+  /* ---------- Szene 7: Und umgekehrt – Leerstand füllen ---------- */
+  (function () {
+    var t = at('und', 3) - 0.25;
+    tl.to('#L-street', { rotationY: 90, duration: 0.3, ease: 'power2.in', transformPerspective: 2400 }, t);
+    sfx('whoosh', t, 0.6);
+    capOut('capOhne', t - 0.3);
+    /* Umbau während die Bühne auf der Kante steht */
+    var tx = t + 0.3;
+    tl.set('#bNotes', { opacity: 0 }, tx);
+    tl.set(B.p, { armFu: -7, armFl: 8, face: 1, head: 0 }, tx);
+    T.flip = tx;
+    tl.set('#treeA', { opacity: 0 }, tx);
+    tl.fromTo('#L-street', { rotationY: -90 }, { rotationY: 0, duration: 0.45, ease: 'back.out(1.4)', transformPerspective: 2400, immediateRender: false }, tx);
+    var tl2 = at('Stehen');
+    tl.to(B.p, { head: 8, duration: 0.3 }, tl2);
+    tl.fromTo('#tumbleWrap', { x: -120 }, { x: 2100, duration: 2.4, ease: 'none', immediateRender: false }, tl2 - 0.1);
+    tl.fromTo('#tumbleRot', { rotation: 0, y: 0 }, { rotation: 720, duration: 2.4, ease: 'none' }, tl2 - 0.1);
+    tl.to('#tumbleRot', { y: -26, duration: 0.2, ease: 'power1.out', yoyo: true, repeat: 11 }, tl2 - 0.1);
+    tl.to(B.p, { armFu: -40, armFl: -95, armBu: 40, armBl: 95, bob: -5, duration: 0.3, ease: 'back.out(2)' }, at('leer') - 0.1);
+    tl.to(B.p, { armFu: -7, armFl: 8, armBu: 7, armBl: -8, bob: 0, head: 0, duration: 0.35 }, at('leer') + 0.6);
+    var tk = at('leer') + 0.25;
+    pop('#buyCard', tk, { from: 0.4, dur: 0.6 }); sfx('pop', tk, 0.7);
+    var tt = at('Stadt') - 0.25;
+    tl.to(B.p, { armFu: -110, armFl: -10, duration: 0.3, ease: 'back.out(1.8)' }, tt - 0.35);
+    press('#buyBtn', tt); tap('#tap2', tt); sfx('click', tt, 0.9);
+    tl.to(B.p, { armFu: -7, armFl: 8, duration: 0.3 }, tt + 0.4);
+    tl.to('#buyCard', { scale: 0.18, x: -470, y: 330, opacity: 0, rotation: -20, duration: 0.55, ease: 'power3.in' }, tt + 0.35);
+    sfx('whoosh', tt + 0.35, 0.5);
+    tl.to('#doorLeaf', { scaleX: 0.12, transformOrigin: '0% 50%', duration: 0.2 }, tt + 0.7);
+    tl.to('#doorLeaf', { scaleX: 1, duration: 0.25 }, tt + 1.05);
+    var tbel = at('schnell');
+    ['#win1', '#win2', '#win3', '#win4'].forEach(function (w, i) {
+      var ti = tbel + i * 0.16;
+      tl.fromTo(w, { scale: 1.12, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.4, ease: 'back.out(3)', immediateRender: false }, ti);
+      tl.fromTo(w + ' .guest', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3, immediateRender: false }, ti + 0.05);
+      sfx('plink' + i, ti, 0.9);
+    });
+    T.light = tbel; T.boardBack = tbel + 0.64;
+    tl.fromTo('#board', { scaleY: 1 }, { scaleY: 0, duration: 0.12, immediateRender: false }, tbel + 0.58);
+    tl.to('#board', { scaleY: 1, duration: 0.35, ease: 'back.out(3)' }, tbel + 0.7);
+    capIn('capVoll', tbel + 0.25);
+    hop(B, tbel + 0.5, 22);
+  })();
+
+  /* ---------- Szene 8: Zusammenfassung ---------- */
+  (function () {
+    var t = at('Weitergeben') - 0.75;
+    capOut('capVoll', t - 0.2);
+    show('#L-recap', t);
+    tl.fromTo('#L-recap', { x: 1920 }, { x: 0, duration: 0.6, ease: 'expo.inOut' }, t);
+    tl.to('#L-street', { x: -1920, duration: 0.6, ease: 'expo.inOut' }, t);
+    hideAt('#L-street', t + 0.6);
+    sfx('whoosh', t + 0.05, 0.7);
+    ['r1', 'r2', 'r3'].forEach(function (r, i) {
+      var tw = [at('Weitergeben'), at('mitverdienen'), at('Leerstand', 1)][i];
+      pop('#' + r + ' .ico', tw - 0.12, { rot: -40, dur: 0.55 });
+      tl.fromTo('#' + r + ' text', { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55, ease: 'expo.out' }, tw - 0.06);
+      sfx('thump', tw - 0.1, 0.8);
+    });
+    /* Netzwerk auf der Karte */
+    tl.fromTo('#net', { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.8, ease: 'expo.out', immediateRender: true }, t + 0.3);
+    Object.keys(CITY).forEach(function (k, i) { pop('#np' + i, t + 0.5 + i * 0.07, { dur: 0.4 }); });
+    NET_PAIRS.forEach(function (pr, i) {
+      var ts = t + 0.9 + i * 0.36;
+      tl.fromTo('#na' + i, { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: 0.7, ease: 'power2.inOut' }, ts);
+      tl.fromTo('#nc' + i, { opacity: 0 }, { opacity: 1, duration: 0.1 }, ts);
+      tl.to('#nc' + i, { motionPath: { path: arc(CITY[pr[0]], CITY[pr[1]], 0.3) }, duration: 0.7, ease: 'power2.inOut' }, ts);
+      tl.to('#nc' + i, { opacity: 0, scale: 0.4, duration: 0.2 }, ts + 0.7);
+      tl.to('#na' + i, { drawSVG: '100% 100%', duration: 0.5, ease: 'power2.in' }, ts + 0.8);
+    });
+    gsap.set('[id^=nc]', { opacity: 0 });
+    /* Mehr aus jedem Kunden */
+    var tm = at('So', 2) - 0.1;
+    ['r1', 'r2', 'r3'].forEach(function (r, i) { tl.to('#' + r, { x: -900, opacity: 0, duration: 0.5, ease: 'power3.in' }, tm - 0.4 + i * 0.05); });
+    sfx('whoosh', tm - 0.35, 0.5);
+    capIn('capMehr', tm + 0.1, 0.1);
+    tl.fromTo(CAPS.capMehr.querySelectorAll('.hl'), { '--hl': 0 }, { '--hl': 1, duration: 0.5, ease: 'power2.inOut', stagger: 0.12 }, at('jedem') + 0.1);
+  })();
+
+  /* ---------- Szene 9: Abschluss ---------- */
+  var URL_TXT = 'monteurzimmerblick.de';
+  (function () {
+    var t = at('Monteurzimmerblick', 2) - 0.8;
+    tl.set('#coverSq', { visibility: 'visible' }, t);
+    tl.fromTo('#coverSq', { scale: 0, rotation: -90, borderRadius: '20px' }, { scale: 24, rotation: 0, borderRadius: '4px', duration: 0.5, ease: 'power3.in' }, t);
+    sfx('whoosh', t, 0.8);
+    var ts = t + 0.5;
+    capOut('capMehr', ts - 0.5);
+    hideAt('#L-recap', ts);
+    show('#L-cta', ts);
+    /* Zeichen schrumpft auf seinen Platz im Logo */
+    tl.to('#coverSq', { scale: 1.46, x: function () { return MARK.x + 73 - 960; }, y: function () { return MARK.y + 73 - 540; }, borderRadius: '20px', duration: 0.55, ease: 'expo.out' }, ts);
+    tl.set('#coverSq', { visibility: 'hidden' }, ts + 0.55);
+    tl.fromTo('#ctaMark', { opacity: 0 }, { opacity: 1, duration: 0.01 }, ts + 0.54);
+    tl.fromTo('#ctaLogo .t3', { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.4, ease: 'back.out(2.5)' }, ts + 0.45);
+    tl.fromTo('#ctaLogo .t2', { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: 'back.out(2)' }, ts + 0.6);
+    tl.fromTo('#ctaLogo .t1', { x: 50, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: 'back.out(2)' }, ts + 0.7);
+    sfx('pop', ts + 0.5, 0.7);
+    tl.fromTo('#wordClipR', { attr: { width: 0 } }, { attr: { width: 1400 }, duration: 0.8, ease: 'expo.inOut' }, ts + 0.55);
+    tl.fromTo('#word', { x: -80 }, { x: 0, duration: 0.8, ease: 'expo.out' }, ts + 0.55);
+    popChar(BC, ts + 0.9); popChar(WC, ts + 1.0);
+    wave(BC, ts + 1.3, 2, 'F'); wave(WC, ts + 1.4, 2, 'F');
+    var tb = at('kostenlos');
+    pop('#ctaBtn', tb - 0.25, { from: 0.5 }); sfx('pop', tb - 0.25, 0.8);
+    var tc = at('starten') + 0.25;
+    press('#ctaBtn', tc); tap('#tap3', tc); sfx('click', tc, 0.9);
+    var tu = at('auf') + 0.05, n = URL_TXT.length, dt = 1.3 / n;
+    T.url = tu; T.urlDt = dt;
+    for (var i = 1; i <= n; i += 2) sfx('type', tu + i * dt, 0.3);
+    wave(WC, DURATION - 3.2, 2, 'F'); wave(BC, DURATION - 3.0, 2, 'F');
+    tl.to({}, { duration: 0.01 }, DURATION);
+  })();
+
+  /* ================= Layout, das Messungen braucht ================= */
+  function layoutCTA() {
+    var word = $('word'), w = word.getComputedTextLength(), mark = 146, gap = 34, total = mark + gap + w;
+    var x0 = (1920 - total) / 2;
+    MARK.x = x0; MARK.y = 470 - 106;
+    $('ctaMarkW').setAttribute('transform', 'translate(' + x0 + ',' + MARK.y + ') scale(1.46)');
+    word.setAttribute('x', x0 + mark + gap);
+    $('wordClipR').setAttribute('x', x0 + mark + gap - 20);
+  }
+  var GLASS = ['#win1', '#win2', '#win3', '#win4'].map(function (w) { return q(w + ' .glass'); });
+  var lastUrl = -1;
+  function states(t) {
+    /* Fenster: kurz weiß beim Wort „Monteurzimmer“, grau während des Leerstands, dann wieder gelb */
+    for (var i = 0; i < 4; i++) {
+      var f = Y;
+      if (t >= T.flash && t < T.flash + 0.2 + i * 0.07) f = WH;
+      if (t >= T.flip && t < T.light + i * 0.16) f = G3;
+      GLASS[i].setAttribute('fill', f);
+    }
+    $('boardTxt').textContent = (t >= T.flip && t < T.boardBack) ? 'ZIMMER FREI' : 'MONTEURZIMMER';
+    var k = Math.max(0, Math.min(URL_TXT.length, Math.floor((t - T.url) / T.urlDt)));
+    if (k !== lastUrl) { $('url').textContent = URL_TXT.slice(0, k); lastUrl = k; }
+    var u = $('url'), w = k ? u.getComputedTextLength() : 0;
+    $('caret').setAttribute('x', (960 + w / 2 + 6).toFixed(1));
+    var on = t >= T.url - 0.1 && (t < T.url + 1.5 || Math.floor((t - T.url - 1.5) / 0.5) % 2 === 1);
+    $('caret').setAttribute('opacity', on ? 1 : 0);
+  }
+
+  /* ================= Rendern ================= */
+  var viewport = $('viewport'), stage = $('stage');
   function fit() {
-    var w = viewport.clientWidth, h = viewport.clientHeight;
-    var s = Math.min(w / 1280, h / 800);
+    var s = viewport.clientWidth / 1920;
     stage.style.transform = 'scale(' + s + ')';
-    stage.style.left = ((w - 1280 * s) / 2) + 'px';
-    stage.style.top = ((h - 800 * s) / 2) + 'px';
   }
   window.addEventListener('resize', fit);
   fit();
 
-  function sceneAt(time) {
-    for (var i = DUR.length - 1; i >= 0; i--) if (time >= starts[i]) return i;
-    return 0;
-  }
-
-  function render(time) {
-    t = Math.max(0, Math.min(total, time));
-    var idx = t >= total ? DUR.length - 1 : sceneAt(t);
-    scenes.forEach(function (s, i) { s.classList.toggle('on', i === idx); });
-    var local = (t - starts[idx]) * 1000;
-    scenes[idx].getAnimations({ subtree: true }).forEach(function (a) { a.currentTime = local; });
-    if (idx !== current) { current = idx; if (playing) cueVoice(idx, t - starts[idx]); }
-    progFill.style.width = (t / total * 100) + '%';
-    prog.setAttribute('aria-valuenow', Math.round(t / total * 100));
-    timeEl.textContent = fmt(t) + ' / ' + fmt(total);
+  function render(t) {
+    t = Math.max(0, Math.min(DURATION, t));
+    tl.seek(t, true);
+    for (var i = 0; i < CHARS.length; i++) drawChar(CHARS[i], t);
+    states(t);
+    return t;
   }
   window.__render = render;
-  window.__total = function () { return total; };
+  window.__duration = DURATION;
+  window.__cues = function () {
+    return { voice: VO_SEGS.map(function (s) { return { from: s[0], to: s[1], at: s[2] }; }), sfx: SFX.slice().sort(function (a, b) { return a.t - b.t; }), duration: DURATION };
+  };
 
-  function fmt(s) { s = Math.floor(s); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
-
-  function cueVoice(idx, offset) {
-    voices.forEach(function (v, i) {
-      if (i !== idx) { v.pause(); return; }
-      try { v.currentTime = Math.max(0, offset); } catch (e) {}
-      v.muted = muted;
-      if (playing && !EXPORT) v.play().catch(function () {});
-    });
-  }
-
-  function tick() {
+  /* ================= Vorschau-Player ================= */
+  var params = new URLSearchParams(location.search);
+  var EXPORT = params.has('export');
+  var player = $('player'), audio = $('audio'), cover = $('playCover'), fill = $('progFill'), timeEl = $('time'), btn = $('btnPlay');
+  if (EXPORT) player.classList.add('export');
+  var playing = false, t0 = 0, cur = 0, raf = 0;
+  function fmt(s) { s = Math.floor(s); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
+  function ui() { fill.style.width = (cur / DURATION * 100) + '%'; timeEl.textContent = fmt(cur) + ' / ' + fmt(DURATION); }
+  function loop() {
     if (!playing) return;
-    var now = (performance.now() - t0) / 1000;
-    if (now >= total) { render(total); stop(true); return; }
-    render(now);
-    raf = requestAnimationFrame(tick);
+    cur = (performance.now() - t0) / 1000;
+    if (cur >= DURATION) { cur = DURATION; render(cur); stop(); cover.classList.remove('hidden'); return; }
+    render(cur); ui();
+    raf = requestAnimationFrame(loop);
   }
-
   function play() {
-    if (ended || t >= total) { t = 0; current = -1; ended = false; }
-    playing = true;
-    player.classList.add('playing'); player.classList.remove('paused');
-    cover.classList.add('hidden');
-    t0 = performance.now() - t * 1000;
-    current = -1;
-    render(t);
-    music.muted = muted;
-    music.play().catch(function () {});
-    raf = requestAnimationFrame(tick);
+    if (cur >= DURATION) cur = 0;
+    playing = true; player.classList.remove('paused'); cover.classList.add('hidden'); btn.textContent = '❚❚';
+    t0 = performance.now() - cur * 1000;
+    try { audio.currentTime = cur; audio.play().catch(function () {}); } catch (e) {}
+    raf = requestAnimationFrame(loop);
   }
-  function stop(atEnd) {
-    playing = false;
-    cancelAnimationFrame(raf);
-    player.classList.remove('playing'); player.classList.add('paused');
-    voices.forEach(function (v) { v.pause(); });
-    music.pause();
-    if (atEnd) { ended = true; coverLbl.textContent = 'Noch einmal ansehen'; cover.classList.remove('hidden'); }
-  }
-  function toggle() { playing ? stop(false) : play(); }
-
-  function seek(frac) {
-    var wasPlaying = playing;
-    if (playing) stop(false);
-    ended = false;
-    t = frac * total;
-    current = -1;
-    render(t);
-    if (wasPlaying) play();
-  }
-
+  function stop() { playing = false; cancelAnimationFrame(raf); audio.pause(); player.classList.add('paused'); btn.textContent = '▶'; ui(); }
   cover.addEventListener('click', play);
-  btnPlay.addEventListener('click', toggle);
-  btnMute.addEventListener('click', function () {
-    muted = !muted; player.classList.toggle('muted', muted);
-    music.muted = muted; voices.forEach(function (v) { v.muted = muted; });
+  btn.addEventListener('click', function () { playing ? stop() : play(); });
+  $('prog').addEventListener('click', function (e) {
+    var r = this.getBoundingClientRect(), was = playing;
+    stop(); cur = (e.clientX - r.left) / r.width * DURATION; render(cur); ui(); if (was) play();
   });
-  btnFull.addEventListener('click', function () {
-    if (d.fullscreenElement) d.exitFullscreen(); else player.requestFullscreen && player.requestFullscreen();
-  });
-  prog.addEventListener('click', function (e) {
-    var r = prog.getBoundingClientRect();
-    seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)));
-  });
-  d.addEventListener('keydown', function (e) {
-    if (e.key === ' ' || e.key === 'k') { e.preventDefault(); toggle(); }
-    if (e.key === 'ArrowRight') seek(Math.min(1, (t + 5) / total));
-    if (e.key === 'ArrowLeft') seek(Math.max(0, (t - 5) / total));
-    if (e.key === 'm') btnMute.click();
-    if (e.key === 'f') btnFull.click();
-  });
-  d.addEventListener('fullscreenchange', fit);
+  document.addEventListener('keydown', function (e) { if (e.key === ' ') { e.preventDefault(); playing ? stop() : play(); } });
 
-  render(params.has('t') ? parseFloat(params.get('t')) || 0 : 0);
-  if (params.has('autoplay') && !EXPORT) {
-    play();
-    setTimeout(function () { if (voices[0].paused && music.paused) { stop(false); cover.classList.remove('hidden'); } }, 600);
-  }
+  window.__ready = document.fonts.ready.then(function () {
+    layoutCTA();
+    cur = params.has('t') ? parseFloat(params.get('t')) || 0 : 0;
+    render(cur); ui();
+    return true;
+  });
 })();
 </script>
 </body>

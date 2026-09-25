@@ -1,0 +1,8 @@
+{
+  "name": "erklaervideo-export",
+  "private": true,
+  "description": "Rendert erklaervideo.html bildgenau zu MP4",
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}
