@@ -20,12 +20,13 @@ Statische Website, kein Build-Schritt. Alle Dateien in diesem Ordner auf den Web
 
 ## Erklärvideo
 
-Das Erklärvideo (ca. 56 s, Motion Graphics im Stil der Seite) erzählt die Geschichte von Herrn Berger, Vermieter in Magdeburg: Sein Kunde zieht zur nächsten Baustelle nach Hamburg, früher war die Anfrage damit weg. Heute gibt er sie über Monteurzimmerblick an eine geprüfte Vermieterin in Hamburg weiter und verdient mit, ohne neues Zimmer. Umgekehrt kauft er Anfragen aus seiner Stadt und füllt Leerstand. Zum Schluss: kostenlos starten auf monteurzimmerblick.de. Keine Preise, keine Fachbegriffe.
+Das Erklärvideo (ca. 76 s, Motion Graphics im Stil der Seite) erzählt die Geschichte von Herrn Berger, Vermieter in Magdeburg: Sein Kunde zieht zur nächsten Baustelle nach Hamburg, früher war die Anfrage damit weg. Heute gibt er sie über Monteurzimmerblick an einen geprüften Vermieter in Hamburg weiter und bekommt für jede vermittelte Anfrage eine Provision. Umgekehrt sucht er bei Leerstand gezielt eine passende Anfrage für genau diese Wohnung und kauft sie. Ergebnis: weniger Leerstand, Provisionen als Extra-Einnahme, mehr Rendite je Wohnung. Die Kunden werden von Stadt zu Stadt weiterempfohlen. Schluss: „Win-win-win“ und kostenlos starten auf monteurzimmerblick.de. Keine Preise oder Prozentzahlen.
 
-- **MP4** `assets/video/erklaervideo.mp4` (1920×1080, 60 fps, H.264 + AAC, ca. 10 MB). Der Player in `index.html` spielt diese Datei (Bild, Stimme, Musik und Geräusche in einer Spur). Vorschaubild: `assets/img/video-poster.png`.
-- **Quelle** `erklaervideo.html` (im Root, `noindex`): pausierte GSAP-Timeline (Bibliothek in `assets/video/lib/`), Figuren und Szenen als SVG. Die Timeline richtet sich nach den Wortzeiten der Sprecheraufnahme (`WORDS`, `VO_SEGS`). Direkt im Browser aufrufbar, spielt dann den Ton aus der MP4.
-- **Ton** `assets/video/sprecher.mp3` (eine Aufnahme, Gemini TTS, Stimme „Charon“, wird in Sätze geschnitten) und `assets/video/musik.mp3` (ElevenLabs Music, passend zum Schnitt komponiert). Die Geräusche entstehen beim Mischen.
-- **Neu bauen** mit `werkzeuge/erklaervideo/baue.sh` (Anleitung im Skript): rendert alle Bilder über Chrome, mischt den Ton auf -16 LUFS und schreibt MP4 und Vorschaubild. Einzelne Standbilder zum Prüfen: `node werkzeuge/erklaervideo/stills.js 12.5 30`.
+- **MP4** `assets/video/erklaervideo.mp4` (1920×1080, 60 fps, H.264 + AAC, ca. 13 MB). Der Player in `index.html` spielt diese Datei (Bild, Stimme, Musik und Geräusche in einer Spur). Vorschaubild: `assets/img/video-poster.png`.
+- **Quelle** `erklaervideo.html` (im Root, `noindex`): pausierte GSAP-Timeline (Bibliothek in `assets/video/lib/`), Szenen als SVG. Die Timeline richtet sich nach den Wortzeiten der Sprecheraufnahme (`WORDS`, `VO_SEGS`). Direkt im Browser aufrufbar, spielt dann den Ton aus der MP4.
+- **Figuren** `assets/video/figuren.js`: Herr Berger, der Hamburger Vermieter und der Monteur als SVG-Rig mit Knie, Ellbogen, Mimik, Atmen und Blinzeln; Gesten wie Winken, Handschlag, Schulterzucken. Prüfseite: `werkzeuge/erklaervideo/figuren-test.html`.
+- **Ton** `assets/video/sprecher.mp3` (eine Aufnahme, Gemini TTS, Stimme „Charon“, wird in Sätze geschnitten) und `assets/video/musik.mp3` (ElevenLabs Music; das Ende wird beim Mischen taktgenau verlängert). Die Geräusche entstehen beim Mischen.
+- **Neu bauen** mit `werkzeuge/erklaervideo/baue.sh` (Anleitung im Skript): rendert alle Bilder über Chrome, mischt den Ton auf -16 LUFS und schreibt MP4 und Vorschaubild. Standbilder zum Prüfen: `node werkzeuge/erklaervideo/stills.js 12.5 30`, danach `kontaktbogen.sh`.
 
 Der Ordner `werkzeuge/` gehört nicht auf den Webspace.
 

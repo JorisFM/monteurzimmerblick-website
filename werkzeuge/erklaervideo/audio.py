@@ -15,6 +15,10 @@ VOICE = os.path.join(SITE, 'assets/video/sprecher.mp3')
 MUSIC = os.path.join(SITE, 'assets/video/musik.mp3')
 SR = 48000
 rng = np.random.default_rng(7)
+# Die Musik blendet ab ~69 s selbst aus. Ab einem Schlag bei 68,09 s wird deshalb
+# derselbe Groove 8 Takte früher weitergespielt (112,35 BPM, 1 Takt = 2,1362 s).
+MUSIC_SPLICES = [(68.09, 8 * 2.1362)]
+MUSIC_FADE_OUT = 1.0
 
 
 def load(path, ch):
@@ -136,12 +140,21 @@ def main():
 
     # Musik: sanft ausgleichen, unter der Stimme absenken, Ende auf die Videolänge
     mus = load(MUSIC, 2)
+    for at, back in MUSIC_SPLICES:
+        a0, sh, xf = int(at * SR), int(back * SR), int(0.12 * SR)
+        tail = mus[a0 - sh - xf:]
+        w = np.sin(np.linspace(0, np.pi / 2, xf))[:, None]
+        head = mus[:a0 - xf].copy()
+        mix_x = mus[a0 - xf:a0] * np.cos(np.linspace(0, np.pi / 2, xf))[:, None] + tail[:xf] * w
+        mus = np.vstack([head, mix_x, tail[xf:]])
     if len(mus) < N: mus = np.vstack([mus, np.zeros((N - len(mus), 2))])
     mus = mus[:N]
+    fo_n = int(MUSIC_FADE_OUT * SR); end = int(D * SR)
+    mus[end - fo_n:end] *= np.linspace(1, 0, fo_n)[:, None]; mus[end:] = 0
     mono = mus.mean(axis=1)
     lvl = np.sqrt(np.convolve(mono ** 2, np.ones(SR) / SR, 'same')) + 1e-6
     ref = np.sqrt(np.mean(mono ** 2))
-    corr = np.clip((ref / lvl) ** 0.45, 0.6, 2.2)
+    corr = np.clip((ref / lvl) ** 0.3, 0.75, 1.6)   # nur sanft ausgleichen, Breakdown bleibt hörbar leiser
     corr = np.convolve(corr, np.ones(SR // 4) / (SR // 4), 'same')
     mus *= corr[:, None]
     mr = np.sqrt(np.mean(mus.mean(axis=1) ** 2))

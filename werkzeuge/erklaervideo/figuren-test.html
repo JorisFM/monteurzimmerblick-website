@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Figuren-Test</title>
+<style>html,body{margin:0;background:#F6F6F3}svg{display:block}</style></head>
+<body>
+<svg id="s" width="1920" height="1080" viewBox="0 0 1920 1080"><rect width="1920" height="1080" fill="#F6F6F3"/><path d="M0,1000 H1920 M0,500 H1920" stroke="#0E0E0D" stroke-width="4"/></svg>
+<script src="../../assets/video/figuren.js"></script>
+<script>
+/* Aufstellung: oben Ruhe/Winken/Schulterzucken, unten Gehphasen und Handschlag */
+var s = document.getElementById('s'), F = Figuren, R = F.REST;
+function mk(type, x, y, p) { return F.create(s, type + x + '_' + y, type, Object.assign({ x: x, y: y, s: 0.95 }, p || {})); }
+if (location.search.indexOf('gesichter') > -1) {
+  /* Nahaufnahme: drei Köpfe groß, je neutral / froh / traurig */
+  [['berger', 0], ['kollege', 0], ['worker', 0], ['berger', 1], ['kollege', 2], ['worker', 1]].forEach(function (v, i) {
+    mk(v[0], 330 + (i % 3) * 630, 1480 + Math.floor(i / 3) * 1090, { s: 2.6, mood: v[1], worry: v[1] === 2 ? 1 : 0, brow: v[1] === 1 ? 0.6 : 0 });
+  });
+  s.setAttribute('viewBox', '0 0 1920 1080');
+  s.querySelector('path').setAttribute('d', '');
+  F.draw(0.5); window.__ready = Promise.resolve(true);
+  throw 0;
+}
+mk('berger', 140, 500);
+mk('kollege', 400, 500);
+mk('worker', 660, 500);
+mk('berger', 920, 500, { armFu: -118, armFl: -62, handF: -8, headRot: 3, lean: -1.5, brow: 0.6, mood: 1 });
+mk('kollege', 1180, 500, { shoulderY: -8, armFu: -24, armFl: -82, handF: -30, armBu: 24, armBl: 82, handB: 30, headRot: 9, worry: 1, brow: 0.4, mood: 2 });
+mk('worker', 1440, 500, { armFu: -132, armFl: -22, handF: -10, armBu: -120, armBl: -18, handB: -10, lookY: -3, headRot: -7, brow: 0.8, mood: 3 });
+mk('berger', 1700, 500, { armFu: -46, armFl: -92, handF: -10, armBu: -40, armBl: -96, handB: -10, lookY: 3, headRot: 5, mood: 1 });
+for (var i = 0; i < 5; i++) mk('worker', 140 + i * 230, 1000, { walkAmp: 1, walkPhase: i * Math.PI / 4 });
+mk('kollege', 1360, 1000, { armFu: -62, armFl: -26, handF: -80, lean: 2.5, mood: 1 });
+mk('worker', 1640, 1000, { face: -1, armFu: -62, armFl: -26, handF: -80, lean: 2.5, mood: 1 });
+F.draw(0.5);
+window.__ready = Promise.resolve(true);
+</script></body></html>

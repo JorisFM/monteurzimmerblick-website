@@ -4,17 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Erklärvideo – Monteurzimmerblick</title>
-  <meta name="description" content="In einer Minute erklärt: Wie Vermieter von Monteurzimmern mit ihren Kunden zusätzlich verdienen.">
+  <meta name="description" content="In gut einer Minute erklärt: Wie Vermieter von Monteurzimmern mit Provisionen und weniger Leerstand mehr aus jeder Wohnung holen.">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#0E0E0D">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/fonts/fonts.css">
   <!--
-    Quelle des Erklärvideos (Motion Graphics, 1920×1080, ca. 55 s).
+    Quelle des Erklärvideos (Motion Graphics, 1920×1080, ca. 76 s).
     Die Animation ist eine pausierte GSAP-Timeline und wird bildgenau gerendert:
     ?export=1 blendet die Steuerung aus, window.__render(t) setzt jedes Bild.
-    Sprecher: assets/video/sprecher.mp3 (eine Aufnahme, per VO_SEGS geschnitten).
-    Die fertige Datei mit Ton ist assets/video/erklaervideo.mp4.
+    Figuren: assets/video/figuren.js. Sprecher: assets/video/sprecher.mp3 (eine Aufnahme, per VO_SEGS geschnitten).
+    Die fertige Datei mit Ton ist assets/video/erklaervideo.mp4 (Build: werkzeuge/erklaervideo/baue.sh).
   -->
   <style>
     :root { --gelb: #F5B800; --ink: #0E0E0D; --bg: #F6F6F3; --ff: 'Inter', system-ui, sans-serif; --ff-tight: 'Inter Tight', 'Inter', sans-serif; --ff-mono: 'IBM Plex Mono', monospace; }
@@ -32,15 +32,12 @@
     svg .ui { font-family: var(--ff); font-weight: 600; letter-spacing: 0; }
 
     /* Einblendungen (Bildschirmebene, unabhängig von der Kamera) */
+    #caps { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
     .cap { position: absolute; font-family: var(--ff-tight); font-weight: 800; letter-spacing: -.035em; line-height: 1.02; color: var(--ink); white-space: nowrap; }
     .cap .ln { display: block; }
     .cap .m { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .04em .24em; margin: 0 -.04em -.24em; }
     .cap .w { display: inline-block; }
-    .cap .hl { position: relative; }
-    .cap .hl::before { content: ""; position: absolute; left: -.08em; right: -.08em; bottom: .08em; height: .42em; background: var(--gelb); z-index: -1; transform-origin: 0 50%; transform: scaleX(var(--hl, 0)); }
-    #caps { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
     .wipe { z-index: 11; position: absolute; top: -200px; height: 1480px; width: 2600px; background: var(--gelb); left: 2000px; transform: skewX(-12deg); visibility: hidden; }
-    .wipe.ink { background: var(--ink); }
     .cover-sq { z-index: 12; position: absolute; left: 910px; top: 490px; width: 100px; height: 100px; border-radius: 20px; background: var(--gelb); visibility: hidden; }
 
     /* Steuerung für die Vorschau im Browser */
@@ -65,7 +62,9 @@
       <div class="layer" id="L-phone"><svg id="S-phone" viewBox="0 0 1920 1080"></svg></div>
       <div class="layer" id="L-map"><div class="cam" id="mapcam"><svg id="S-map" viewBox="0 0 1920 1080"></svg></div></div>
       <div class="layer" id="L-hh"><svg id="S-hh" viewBox="0 0 1920 1080"></svg></div>
-      <div class="layer" id="L-recap"><svg id="S-recap" viewBox="0 0 1920 1080"></svg></div>
+      <div class="layer" id="L-yield"><svg id="S-yield" viewBox="0 0 1920 1080"></svg></div>
+      <div class="layer" id="L-route"><svg id="S-route" viewBox="0 0 1920 1080"></svg></div>
+      <div class="layer" id="L-trio"><svg id="S-trio" viewBox="0 0 1920 1080"></svg></div>
       <div class="layer" id="L-cta"><svg id="S-cta" viewBox="0 0 1920 1080"></svg></div>
       <div id="caps"></div>
       <div class="wipe" id="wipe"></div>
@@ -84,36 +83,49 @@
 <script src="assets/video/lib/gsap.min.js"></script>
 <script src="assets/video/lib/DrawSVGPlugin.min.js"></script>
 <script src="assets/video/lib/MotionPathPlugin.min.js"></script>
-<script src="assets/video/lib/CustomEase.min.js"></script>
+<script src="assets/video/figuren.js"></script>
 <script>
 (function () {
   'use strict';
-  gsap.registerPlugin(DrawSVGPlugin, MotionPathPlugin, CustomEase);
+  gsap.registerPlugin(DrawSVGPlugin, MotionPathPlugin);
 
   var INK = '#0E0E0D', Y = '#F5B800', WH = '#FFFFFF', BG = '#F6F6F3', G1 = '#EDEDE8', G2 = '#E4E4DF', G3 = '#D2D2CC', G4 = '#7A7A74', DK = '#3A3A36';
   var SK = 'stroke="' + INK + '" stroke-linejoin="round" stroke-linecap="round"';
-  var DURATION = 55.6;
+  var DURATION = 75.6;
   var MARK = { x: 0, y: 0 };
   var T = {};   /* Zeitpunkte für Zustände, die render() direkt setzt */
 
   /* ================= Sprecher: eine Aufnahme, in Sätze geschnitten ================= */
   /* [von, bis] in der Aufnahme -> Start auf der Timeline (Sekunden) */
   var VO_SEGS = [
-    [0.20, 4.40, 0.60],    // Das ist Herr Berger. Er vermietet Monteurzimmer in Magdeburg.
-    [4.80, 9.62, 5.15],    // Seine Kunden sind zufrieden. Doch die Baustelle zieht weiter – nach Hamburg.
-    [10.36, 12.30, 10.55], // Dort hat Herr Berger kein Zimmer.
-    [12.80, 16.05, 12.95], // Früher war die Anfrage damit weg. Und das Geld auch.
-    [16.45, 20.42, 17.55], // Heute gibt er sie einfach weiter – mit Monteurzimmerblick.
-    [20.72, 24.12, 22.75], // Eine geprüfte Vermieterin in Hamburg übernimmt den Kunden.
-    [24.52, 25.98, 26.95], // Und Herr Berger verdient mit.
-    [26.52, 28.78, 29.65], // Ohne ein einziges neues Zimmer.
-    [29.40, 36.28, 32.55], // Und umgekehrt: … kauft er Anfragen aus seiner Stadt. So sind sie schnell wieder belegt.
-    [36.52, 40.20, 40.15], // Weitergeben. Mitverdienen. Leerstand füllen.
-    [40.62, 42.92, 44.25], // So holen Sie mehr aus jedem Kunden.
-    [43.46, 48.64, 47.25]  // Monteurzimmerblick. Jetzt kostenlos starten – auf monteurzimmerblick punkt de.
+    [0.40, 4.50, 0.60],    // Das ist Herr Berger. Er vermietet Monteurzimmer in Magdeburg.
+    [5.15, 10.48, 5.30],   // Seine Kunden sind zufrieden. Doch die Baustelle zieht weiter – nach Hamburg.
+    [11.20, 12.80, 11.30], // Dort hat Herr Berger kein Zimmer.
+    [13.45, 16.95, 13.45], // Früher war die Anfrage damit weg. Und das Geld auch.
+    [17.98, 21.62, 18.60], // Heute gibt er sie einfach weiter – mit Monteurzimmerblick.
+    [22.10, 25.20, 23.58], // Ein geprüfter Vermieter in Hamburg übernimmt den Kunden.
+    [25.76, 29.16, 27.60], // Und für jede vermittelte Anfrage bekommt Herr Berger eine Provision.
+    [29.82, 31.80, 31.90], // Ohne ein einziges neues Zimmer.
+    [33.05, 38.72, 34.35], // Und umgekehrt: Steht bei ihm eine Wohnung leer, schaut er einfach, ob gerade eine passende Anfrage da ist.
+    [39.10, 41.62, 40.40], // Und kauft sie gezielt für genau diese Wohnung.
+    [42.38, 46.72, 43.90], // Das heißt: weniger Leerstand. Dazu Provisionen als Extra-Einnahme.
+    [47.34, 49.80, 48.86], // So steigt die Rendite jeder einzelnen Wohnung.
+    [50.52, 53.10, 52.30], // Und für seine Kunden ist es das Einfachste der Welt:
+    [53.30, 58.25, 55.08], // Sie werden von Stadt zu Stadt weiterempfohlen – ohne Stress bei der Suche nach einem guten Anbieter.
+    [59.00, 64.45, 60.90], // Eine echte Win-win-win-Situation: für Sie, für Ihre Kollegen und für Ihre Kunden.
+    [65.22, 70.76, 67.45]  // Monteurzimmerblick. Jetzt kostenlos starten – auf monteurzimmerblick punkt de.
   ];
   /* Wortanfänge laut Transkription (Sekunden in der Aufnahme) */
-  var WORDS = 'Das .28|ist .72|Herr .92|Berger 1.12|Er 2.16|vermietet 2.28|Monteurzimmer 2.72|in 3.52|Magdeburg 3.70|Seine 4.96|Kunden 5.20|sind 5.58|zufrieden 5.82|doch 6.86|die 7.06|Baustelle 7.26|zieht 7.88|weiter 8.10|nach 8.88|Hamburg 9.10|Dort 10.46|hat 10.76|Herr 10.96|Berger 11.16|kein 11.56|Zimmer 11.88|Früher 12.92|war 13.28|die 13.42|Anfrage 13.62|damit 14.14|weg 14.44|und 15.24|das 15.34|Geld 15.52|auch 15.80|Heute 16.82|gibt 17.34|er 17.52|sie 17.64|einfach 17.84|weiter 18.20|mit 18.96|Monteurzimmerblick 19.34|Eine 21.16|geprüfte 21.36|Vermieterin 21.94|in 22.52|Hamburg 22.68|übernimmt 23.22|den 23.60|Kunden 23.76|und 24.60|Herr 24.74|Berger 24.94|verdient 25.38|mit 25.74|ohne 26.62|ein 27.00|einziges 27.32|neues 27.96|Zimmer 28.38|Und 29.48|umgekehrt 29.62|Stehen 30.70|bei 31.02|ihm 31.28|Zimmer 31.54|leer 31.84|kauft 32.46|er 32.80|Anfragen 32.98|aus 33.52|seiner 33.72|Stadt 34.02|So 35.00|sind 35.14|sie 35.26|schnell 35.38|wieder 35.62|belegt 35.82|Weitergeben 37.04|mitverdienen 38.16|Leerstand 39.28|füllen 39.78|So 40.76|holen 40.92|Sie 41.18|mehr 41.44|aus 41.78|jedem 42.08|Kunden 42.44|Monteurzimmerblick 43.54|jetzt 45.04|kostenlos 45.42|starten 45.98|auf 46.74|monteurzimmerblick.de 46.90'
+  var WORDS = ('Das .46|ist .84|Herr 1.06|Berger 1.28|Er 2.26|vermietet 2.46|Monteurzimmer 3.02|in 3.80|Magdeburg 3.94|Seine 5.24|Kunden 5.48|sind 5.96|zufrieden 6.18|doch 7.42|die 7.74|Baustelle 8.00|zieht 8.64|weiter 8.90|nach 9.78|Hamburg 10.06|' +
+    'Dort 11.26|hat 11.50|Herr 11.66|Berger 11.82|kein 12.26|Zimmer 12.54|Früher 13.58|war 14.06|die 14.20|Anfrage 14.38|damit 14.82|weg 15.08|und 15.90|das 16.20|Geld 16.40|auch 16.70|' +
+    'Heute 18.04|gibt 18.54|er 18.76|sie 18.88|einfach 19.04|weiter 19.42|mit 20.24|Monteurzimmerblick 20.62|Ein 22.52|geprüfter 22.66|Vermieter 23.22|in 23.66|Hamburg 23.76|übernimmt 24.28|den 24.72|Kunden 24.90|' +
+    'und 25.82|für 26.06|jede 26.28|vermittelte 26.54|Anfrage 27.04|bekommt 27.58|Herr 27.90|Berger 28.06|eine 28.42|Provision 28.62|ohne 29.92|ein 30.28|einziges 30.56|neues 31.12|Zimmer 31.52|' +
+    'Und 33.12|umgekehrt 33.38|Steht 34.36|bei 34.62|ihm 34.82|eine 35.02|Wohnung 35.20|leer 35.50|schaut 36.18|er 36.38|einfach 36.50|ob 36.84|gerade 36.96|eine 37.32|passende 37.54|Anfrage 37.92|da 38.34|ist 38.52|' +
+    'und 39.16|kauft 39.42|sie 39.70|gezielt 39.84|für 40.38|genau 40.52|diese 41.02|Wohnung 41.32|Das 42.44|heißt 42.58|weniger 43.40|Leerstand 43.78|dazu 44.68|Provisionen 45.06|als 45.82|Extraeinnahme 46.04|' +
+    'So 47.46|steigt 47.66|die 47.98|Rendite 48.10|jeder 48.66|einzelnen 49.06|Wohnung 49.50|Und 50.58|für 50.78|seine 50.92|Kunden 51.14|ist 51.56|es 51.70|das 51.82|Einfachste 52.06|der 52.54|Welt 52.64|' +
+    'Sie 53.38|werden 53.52|von 53.82|Stadt 54.00|zu 54.32|Stadt 54.48|weiterempfohlen 54.78|ohne 55.96|Stress 56.22|bei 56.60|der 56.72|Suche 56.86|nach 57.12|einem 57.28|guten 57.48|Anbieter 57.80|' +
+    'Eine 59.06|echte 59.36|Win-win-win-Situation 59.78|für 61.58|Sie 61.74|für 62.36|Ihre 62.48|Kollegen 62.68|und 63.44|für 63.68|Ihre 63.84|Kunden 64.06|' +
+    'Monteurzimmerblick 65.30|jetzt 66.86|kostenlos 67.22|starten 67.76|auf 68.56|monteurzimmerblick.de 68.84')
     .split('|').map(function (s) { var p = s.split(' '); return [p[0].toLowerCase(), parseFloat(p[1])]; });
 
   function vt(src) {
@@ -160,6 +172,10 @@
   function helmetIcon(x, y, s) {
     return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')"><path d="M-26,4 A26 26 0 0 1 26,4 Z" fill="' + Y + '" ' + SK + ' stroke-width="4"/><rect x="-32" y="0" width="64" height="10" rx="5" fill="' + INK + '"/><path d="M0,-22 V-8" ' + SK + ' stroke-width="4"/></g>';
   }
+  function checkBadge(id, r) {
+    r = r || 30;
+    return '<g id="' + id + '"><circle r="' + r + '" fill="' + Y + '" ' + SK + ' stroke-width="5"/><path d="M' + (-r * 0.42) + ',0 L' + (-r * 0.1) + ',' + (r * 0.32) + ' L' + (r * 0.45) + ',' + (-r * 0.3) + '" fill="none" ' + SK + ' stroke-width="' + (r * 0.2).toFixed(1) + '"/></g>';
+  }
   /* Anfrage-Karte, Mittelpunkt 0,0, Größe 330×196 */
   function requestCard(id, city, sub, label) {
     return '<g id="' + id + '">' +
@@ -176,9 +192,10 @@
       '<circle r="24" fill="' + Y + '" ' + SK + ' stroke-width="4"/>' +
       '<text y="11" text-anchor="middle" font-size="32">€</text></g>';
   }
-  function coin(id) {
-    return '<g id="' + id + '"><circle r="40" fill="' + Y + '" ' + SK + ' stroke-width="6"/><circle r="29" fill="none" stroke="' + INK + '" stroke-width="3"/>' +
-      '<text y="15" text-anchor="middle" font-size="44">€</text></g>';
+  function coin(id, r) {
+    r = r || 40;
+    return '<g id="' + id + '"><circle r="' + r + '" fill="' + Y + '" ' + SK + ' stroke-width="' + (r * 0.15).toFixed(1) + '"/><circle r="' + (r * 0.72) + '" fill="none" stroke="' + INK + '" stroke-width="' + (r * 0.075).toFixed(1) + '"/>' +
+      '<text y="' + (r * 0.38) + '" text-anchor="middle" font-size="' + (r * 1.1) + '">€</text></g>';
   }
   function mapPin(id, x, y, label, side) {
     var lx = side === 'left' ? -28 - 24 : 28 + 24;
@@ -189,105 +206,17 @@
       (label ? '<g class="lbl"><rect x="' + rx + '" y="-84" width="' + w + '" height="58" rx="29" fill="' + WH + '" ' + SK + ' stroke-width="5"/><text x="' + (rx + w / 2) + '" y="-44" text-anchor="middle" font-size="31">' + label + '</text></g>' : '') +
       '</g></g>';
   }
-
-  /* ================= Figuren (Rig) ================= */
-  var CHARS = [];
-  var LOOK = {
-    berger: { skin: '#F1C7A1', top: DK, sleeve: WH, pants: G4, eyeY: -436 },
-    worker: { skin: '#9A6440', top: DK, sleeve: DK, pants: G4, eyeY: -422 },
-    lady:   { skin: '#6E4630', top: WH, sleeve: WH, pants: DK, eyeY: -434 }
-  };
-  function charSVG(id, type) {
-    var L = LOOK[type], s5 = SK + ' stroke-width="5"';
-    function arm(side) {
-      var extra = '';
-      if (type === 'worker') extra = '<rect x="-14" y="44" width="28" height="12" fill="' + Y + '" ' + SK + ' stroke-width="3.5"/>';
-      return '<g id="' + id + '-arm' + side + '">' +
-        '<rect x="-15" y="-12" width="30" height="96" rx="15" fill="' + L.sleeve + '" ' + s5 + '/>' +
-        '<g id="' + id + '-fore' + side + '">' +
-        '<rect x="-14" y="-10" width="28" height="86" rx="14" fill="' + (type === 'lady' ? L.skin : L.sleeve) + '" ' + s5 + '/>' + extra +
-        '<g id="' + id + '-hold' + side + '" transform="translate(0,78)"></g>' +
-        '<circle cx="0" cy="78" r="17" fill="' + L.skin + '" ' + s5 + '/>' +
-        '</g></g>';
-    }
-    function leg(side) {
-      return '<g id="' + id + '-leg' + side + '">' +
-        '<rect x="-18" y="-10" width="36" height="166" rx="18" fill="' + L.pants + '" ' + s5 + '/>' +
-        '<path d="M-24,152 Q-24,146 -16,146 L20,146 Q46,146 46,168 L46,178 L-24,178 Z" fill="' + INK + '" ' + s5 + '/>' +
-        '</g>';
-    }
-    var torso = '<path d="M-58,-340 Q-58,-366 -32,-366 L32,-366 Q58,-366 58,-340 L54,-196 Q54,-182 40,-182 L-40,-182 Q-54,-182 -54,-196 Z" fill="' + L.top + '" ' + s5 + '/>';
-    if (type === 'berger') torso += '<path d="M-30,-366 L0,-300 L30,-366 Z" fill="' + WH + '" ' + SK + ' stroke-width="4"/><path d="M-30,-366 L-14,-348 L0,-362 L14,-348 L30,-366" fill="' + WH + '" ' + SK + ' stroke-width="4"/><path d="M0,-352 L-7,-340 L0,-306 L7,-340 Z" fill="' + Y + '" ' + SK + ' stroke-width="3"/><circle cx="-4" cy="-272" r="4.5" fill="' + WH + '"/><circle cx="-4" cy="-238" r="4.5" fill="' + WH + '"/>';
-    if (type === 'worker') torso += '<rect x="-56" y="-300" width="112" height="18" fill="' + Y + '" ' + SK + ' stroke-width="4"/><rect x="-55" y="-248" width="110" height="18" fill="' + Y + '" ' + SK + ' stroke-width="4"/>';
-    if (type === 'lady') torso += '<path d="M-28,-368 L28,-368 L6,-322 Z" fill="' + Y + '" ' + SK + ' stroke-width="4"/>';
-    var back = '', front = '';
-    if (type === 'berger') {
-      back = '<circle cx="-46" cy="-428" r="11" fill="' + L.skin + '" ' + s5 + '/>';
-      front = '<path d="M-52,-412 C-64,-470 -26,-494 8,-484 C-16,-470 -28,-448 -30,-420 C-38,-414 -46,-410 -52,-412 Z" fill="' + G3 + '" ' + SK + ' stroke-width="4.5"/>' +
-        '<path d="M22,-414 Q33,-423 46,-414 Q34,-407 22,-414 Z" fill="' + G3 + '" ' + SK + ' stroke-width="3.5"/>' +
-        '<circle cx="14" cy="' + L.eyeY + '" r="13" fill="none" ' + SK + ' stroke-width="4"/><circle cx="41" cy="' + L.eyeY + '" r="13" fill="none" ' + SK + ' stroke-width="4"/><path d="M1,' + (L.eyeY - 2) + ' L-40,' + (L.eyeY + 2) + '" ' + SK + ' stroke-width="4"/>';
-    }
-    if (type === 'worker') {
-      front = '<path d="M-60,-438 A60 60 0 0 1 60,-438 Z" fill="' + Y + '" ' + s5 + '/><rect x="-64" y="-446" width="142" height="16" rx="8" fill="' + Y + '" ' + s5 + '/><path d="M0,-494 V-450" ' + SK + ' stroke-width="4.5"/>' +
-        '<path d="M-40,-404 Q-20,-372 20,-376 Q44,-380 52,-404" fill="none" ' + SK + ' stroke-width="4" opacity=".0"/>';
-      back = '<circle cx="-46" cy="-418" r="11" fill="' + L.skin + '" ' + s5 + '/>';
-    }
-    if (type === 'lady') {
-      back = '<circle cx="-22" cy="-488" r="26" fill="' + INK + '" ' + s5 + '/>';
-      front = '<path d="M-55,-418 C-62,-486 34,-506 56,-446 C34,-464 -6,-470 -32,-444 L-38,-404 C-46,-404 -52,-410 -55,-418 Z" fill="' + INK + '" ' + SK + ' stroke-width="4.5"/><circle cx="-40" cy="-400" r="6" fill="' + Y + '" ' + SK + ' stroke-width="3"/>';
-    }
-    var ey = L.eyeY;
-    var face = '<g id="' + id + '-eyes"><circle cx="14" cy="' + ey + '" r="5.5" fill="' + INK + '"/><circle cx="41" cy="' + ey + '" r="5.5" fill="' + INK + '"/></g>' +
-      '<path d="M46,' + (ey + 8) + ' q7,6 0,11" fill="none" ' + SK + ' stroke-width="4"/>' +
-      '<path d="M18,' + (ey + 30) + ' Q30,' + (ey + 40) + ' 42,' + (ey + 29) + '" fill="none" ' + SK + ' stroke-width="4.5"/>';
-    var bag = type === 'worker' ? '<g id="' + id + '-bag"></g>' : '';
-    return '<g id="' + id + '">' +
-      '<ellipse id="' + id + '-shadow" cx="4" cy="2" rx="84" ry="13" fill="' + INK + '" opacity=".08"/>' +
-      '<g id="' + id + '-body">' +
-      '<g id="' + id + '-legB" transform="translate(-24,-178)">' + leg('B') + '</g>' +
-      '<g id="' + id + '-legF" transform="translate(24,-178)">' + leg('F') + '</g>' +
-      '<g id="' + id + '-upper">' +
-      '<g id="' + id + '-armBw" transform="translate(-50,-344)">' + arm('B') + '</g>' +
-      torso +
-      '<rect x="-13" y="-386" width="26" height="30" fill="' + L.skin + '" ' + s5 + '/>' +
-      '<g id="' + id + '-head">' + back + '<circle cx="0" cy="-430" r="54" fill="' + L.skin + '" ' + s5 + '/>' + face + front + '</g>' +
-      '<g id="' + id + '-armFw" transform="translate(50,-344)">' + arm('F') + '</g>' +
-      bag +
-      '</g></g></g>';
+  function cloud(id, x, y, s) {
+    return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')"><g id="' + id + '"><path d="M-90,30 Q-100,-10 -60,-14 Q-50,-56 -4,-50 Q30,-80 64,-44 Q104,-44 100,-6 Q120,30 84,30 Z" fill="' + WH + '" ' + SK + ' stroke-width="6"/></g></g>';
   }
-  function makeChar(svgId, id, type, p) {
-    put(svgId, '<g id="' + id + '-root">' + charSVG(id, type) + '</g>');
-    var c = {
-      id: id, seed: CHARS.length * 1.7,
-      root: $(id + '-root'), upper: $(id + '-upper'), head: $(id + '-head'), eyes: $(id + '-eyes'),
-      legF: $(id + '-legF'), legB: $(id + '-legB'), armF: $(id + '-armFw'), armB: $(id + '-armBw'),
-      foreF: $(id + '-foreF'), foreB: $(id + '-foreB'), shadow: $(id + '-shadow'),
-      p: Object.assign({ x: 0, y: 0, s: 1, face: 1, sy: 1, op: 1, bob: 0, lean: 0, head: 0, headY: 0,
-        legF: 0, legB: 0, armFu: -7, armFl: 8, armBu: 7, armBl: -8, walkPhase: 0, walkAmp: 0, blink: 1 }, p || {})
-    };
-    CHARS.push(c);
-    return c;
+  function van(id) {
+    return '<g id="' + id + '"><path d="M-46,-30 H18 L38,-12 L46,-12 V14 H-46 Z" fill="' + Y + '" ' + SK + ' stroke-width="5"/>' +
+      '<path d="M20,-24 L34,-12 H20 Z" fill="' + WH + '" ' + SK + ' stroke-width="3.5"/>' +
+      '<circle cx="-26" cy="16" r="9" fill="' + INK + '"/><circle cx="26" cy="16" r="9" fill="' + INK + '"/>' +
+      '<circle cx="-26" cy="16" r="3.5" fill="' + G3 + '"/><circle cx="26" cy="16" r="3.5" fill="' + G3 + '"/></g>';
   }
-  function drawChar(c, t) {
-    var p = c.p, sw = Math.sin(p.walkPhase), a = p.walkAmp;
-    var legF = p.legF - a * 26 * sw, legB = p.legB + a * 26 * sw;
-    var armFu = p.armFu + a * 20 * sw, armBu = p.armBu - a * 20 * sw;
-    var bob = p.bob - a * 8 * Math.abs(Math.cos(p.walkPhase)) + Math.sin(t * 2.2 + c.seed) * 1.6;
-    var sx = p.s * p.face / Math.sqrt(p.sy), sy = p.s * p.sy;
-    c.root.setAttribute('transform', 'translate(' + p.x.toFixed(2) + ',' + p.y.toFixed(2) + ') scale(' + sx.toFixed(4) + ',' + sy.toFixed(4) + ')');
-    c.root.setAttribute('opacity', p.op);
-    c.legF.setAttribute('transform', 'translate(24,-178) rotate(' + legF.toFixed(2) + ')');
-    c.legB.setAttribute('transform', 'translate(-24,-178) rotate(' + legB.toFixed(2) + ')');
-    c.upper.setAttribute('transform', 'translate(0,' + bob.toFixed(2) + ') rotate(' + p.lean.toFixed(2) + ',0,-190)');
-    c.armF.setAttribute('transform', 'translate(50,-344) rotate(' + armFu.toFixed(2) + ')');
-    c.armB.setAttribute('transform', 'translate(-50,-344) rotate(' + armBu.toFixed(2) + ')');
-    c.foreF.setAttribute('transform', 'translate(0,76) rotate(' + p.armFl.toFixed(2) + ')');
-    c.foreB.setAttribute('transform', 'translate(0,76) rotate(' + p.armBl.toFixed(2) + ')');
-    c.head.setAttribute('transform', 'translate(0,' + p.headY.toFixed(2) + ') rotate(' + p.head.toFixed(2) + ',0,-376)');
-    var ph = (t + c.seed * 1.3) % 3.9, bl = ph < 0.13 ? 0.12 : 1;
-    bl = Math.min(bl, p.blink);
-    var ey = c.id.indexOf('w') === 0 ? -422 : (c.id.indexOf('l') === 0 ? -434 : -436);
-    c.eyes.setAttribute('transform', 'translate(0,' + ey + ') scale(1,' + bl + ') translate(0,' + (-ey) + ')');
+  function smallHouse(id) {
+    return '<g id="' + id + '"><path d="M-22,4 L0,-16 L22,4 V26 H-22 Z" fill="' + WH + '" ' + SK + ' stroke-width="4"/><rect x="-6" y="10" width="12" height="16" fill="' + INK + '"/></g>';
   }
 
   /* ================= Deutschlandkarte ================= */
@@ -311,6 +240,8 @@
   }
 
   /* ================= Bühnen aufbauen ================= */
+  var F = Figuren;
+
   /* --- Straße in Magdeburg --- */
   function bergerHouse() {
     var win = function (id, x, y) {
@@ -329,22 +260,28 @@
       '<g id="roof"><path d="M784,470 L1080,262 L1376,470 Z" fill="' + INK + '" ' + SK + ' stroke-width="7"/></g>' +
       '</g>';
   }
-  function cloud(id, x, y, s) {
-    return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')"><g id="' + id + '"><path d="M-90,30 Q-100,-10 -60,-14 Q-50,-56 -4,-50 Q30,-80 64,-44 Q104,-44 100,-6 Q120,30 84,30 Z" fill="' + WH + '" ' + SK + ' stroke-width="6"/></g></g>';
-  }
   function tree(x, y, s) {
     return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')"><rect x="-12" y="-150" width="24" height="150" fill="' + DK + '" ' + SK + ' stroke-width="6"/><circle cy="-210" r="96" fill="' + G2 + '" ' + SK + ' stroke-width="7"/><path d="M-40,-230 Q-20,-270 20,-262" fill="none" stroke="' + WH + '" stroke-width="10" stroke-linecap="round"/></g>';
   }
   function crane() {
     return '<g id="crane" fill="none" stroke="' + INK + '" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">' +
       '<path class="cr" d="M-40,70 H40"/><path class="cr" d="M-10,70 V-50"/><path class="cr" d="M10,70 V-50"/><path class="cr" d="M-10,40 L10,10 M10,40 L-10,10 M-10,-20 L10,-50"/>' +
-      '<path class="cr" d="M-70,-50 H90" stroke="' + INK + '"/><path class="cr" d="M0,-80 L-70,-50 M0,-80 L90,-50 M0,-80 V-50"/>' +
+      '<path class="cr" d="M-70,-50 H90"/><path class="cr" d="M0,-80 L-70,-50 M0,-80 L90,-50 M0,-80 V-50"/>' +
       '<rect class="crw" x="-78" y="-44" width="30" height="22" fill="' + Y + '"/>' +
       '<path class="cr" d="M70,-50 V10"/><path class="cr" d="M60,10 H80 M70,10 Q70,24 60,24"/>' +
       '</g>';
   }
   function tumbleweed() {
     return '<g id="tumble"><circle r="40" fill="none" stroke="' + DK + '" stroke-width="6"/><path d="M-30,-12 Q0,-42 30,-8 Q12,28 -20,22 Q-36,0 -12,-14 Q12,-20 16,6 M-34,14 Q-6,4 8,34 M4,-38 Q-10,-14 -34,-18" fill="none" stroke="' + DK + '" stroke-width="5" stroke-linecap="round"/></g>';
+  }
+  /* App-Liste für den gezielten Kauf */
+  function listItem(id, y, city, sub, match) {
+    return '<g transform="translate(0,' + y + ')"><g id="' + id + '">' +
+      '<rect class="bgc" x="-176" y="-44" width="352" height="88" rx="18" fill="' + WH + '" ' + SK + ' stroke-width="4"/>' +
+      '<text x="-150" y="-6" font-size="30">' + city + '</text>' +
+      '<text x="-150" y="24" font-size="19" class="ui" fill="' + DK + '">' + sub + '</text>' +
+      (match ? '<g class="ok" transform="translate(138,0)">' + checkBadge(id + 'Ok', 22) + '</g>' : '') +
+      '</g></g>';
   }
 
   put('S-street',
@@ -356,14 +293,17 @@
     bergerHouse() +
     '<g id="stars">' + star('st1', 990, 205, 30) + star('st2', 1080, 170, 36) + star('st3', 1170, 205, 30) + '</g>' +
     mapPin('pinMD', 1080, 238, 'Magdeburg', 'right') +
-    '<g id="callout" fill="none"><path id="calloutLine" d="M470,380 L360,300 H300" stroke="' + INK + '" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<g id="callout" fill="none"><path id="calloutLine" d="M470,370 L360,300 H300" stroke="' + INK + '" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
     '<g transform="translate(190,300)"><g id="calloutTag"><rect x="-150" y="-36" width="260" height="72" rx="36" fill="' + WH + '" ' + SK + ' stroke-width="5"/><text x="-20" y="12" text-anchor="middle" font-size="36" fill="' + INK + '">Herr Berger</text></g></g></g>' +
     '<g id="tumbleWrap" transform="translate(-120,778)"><g id="tumbleRot">' + tumbleweed() + '</g></g>'
   );
-  var B = makeChar('S-street', 'b', 'berger', { x: 560, y: 820, s: 0.86 });
-  var WK = makeChar('S-street', 'w', 'worker', { x: 1080, y: 820, s: 0.84, op: 0 });
-  $('w-holdB').insertAdjacentHTML('beforeend', '<g transform="translate(0,10)"><rect x="-44" y="0" width="88" height="62" rx="10" fill="' + INK + '" ' + SK + ' stroke-width="4"/><rect x="-44" y="22" width="88" height="12" fill="' + Y + '"/><path d="M-22,0 Q0,-24 22,0" fill="none" ' + SK + ' stroke-width="6"/></g>');
-  $('b-holdF').insertAdjacentHTML('beforeend', '<g id="bNotes" opacity="0" transform="translate(30,22) rotate(108)"><g transform="translate(-10,6) rotate(-10)" id="bn3">' + banknote('bn3i') + '</g><g transform="translate(-4,2) rotate(-4)" id="bn2">' + banknote('bn2i') + '</g>' + banknote('bn1') + '</g>');
+  var B = F.create($('S-street'), 'b', 'berger', { x: 560, y: 820, s: 0.9 });
+  var WK = F.create($('S-street'), 'w', 'worker', { x: 1080, y: 820, s: 0.88, op: 0 });
+  var BAG = '<g transform="translate(0,14)"><rect x="-42" y="0" width="84" height="58" rx="10" fill="' + INK + '" ' + SK + ' stroke-width="4"/><rect x="-42" y="20" width="84" height="11" fill="' + Y + '"/><path d="M-20,0 Q0,-22 20,0" fill="none" ' + SK + ' stroke-width="6"/></g>';
+  WK.holdB.insertAdjacentHTML('beforeend', BAG);
+  /* Geldscheine und Handy in Bergers Hand: im Halte-Griff steht die Hand bei -122°, daher gegengedreht */
+  B.holdF.insertAdjacentHTML('beforeend', '<g id="bNotes" opacity="0" transform="rotate(112) translate(10,-34) scale(.62)"><g id="bn3" transform="translate(-12,10) rotate(-10)">' + banknote('bn3i') + '</g><g id="bn2" transform="translate(-6,4) rotate(-4)">' + banknote('bn2i') + '</g>' + banknote('bn1') + '</g>' +
+    '<g id="bPhone" opacity="0" transform="rotate(118) translate(4,-26)"><rect x="-22" y="-40" width="44" height="80" rx="9" fill="' + INK + '"/><rect x="-17" y="-33" width="34" height="62" rx="5" fill="' + Y + '"/></g>');
   put('S-street',
     '<g transform="translate(1540,190)"><g id="bubble">' +
     '<circle cx="-70" cy="140" r="12" fill="' + WH + '" ' + SK + ' stroke-width="5"/><circle cx="-44" cy="108" r="18" fill="' + WH + '" ' + SK + ' stroke-width="5"/>' +
@@ -372,15 +312,23 @@
     '<text id="bubbleTxt" y="72" text-anchor="middle" font-size="40">Hamburg</text></g></g>' +
     '<g transform="translate(1540,210)"><g id="cardA">' + requestCard('cardAi', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>' +
     '<g transform="translate(700,330)"><g id="coin">' + coin('coinI') + '</g></g>' +
-    '<g transform="translate(1570,420)"><g id="buyCard">' +
-    '<rect x="-200" y="-150" width="400" height="300" rx="28" fill="' + WH + '" ' + SK + ' stroke-width="6"/>' +
-    '<path d="M-200,-94 V-122 Q-200,-150 -172,-150 H172 Q200,-150 200,-122 V-94 Z" fill="' + Y + '" ' + SK + ' stroke-width="6"/>' +
-    '<text x="-172" y="-110" font-size="22" class="ui" style="font-weight:700;letter-spacing:.1em">NEUE ANFRAGE</text>' +
-    '<text x="-172" y="-22" font-size="54">Magdeburg</text>' +
-    '<text x="-172" y="22" font-size="24" class="ui">12 Personen · 3 Wochen</text>' +
-    '<g transform="translate(0,90)"><g id="buyBtn"><rect x="-172" y="-38" width="344" height="76" rx="38" fill="' + Y + '" ' + SK + ' stroke-width="5"/><text y="12" text-anchor="middle" font-size="32">Anfrage kaufen</text></g></g>' +
-    '<circle id="tap2" cx="90" cy="90" r="40" fill="none" stroke="' + INK + '" stroke-width="5" opacity="0"/>' +
-    '</g></g>'
+    /* App: passende Anfrage finden und kaufen */
+    '<g transform="translate(1590,450)"><g id="app">' +
+    '<rect x="-200" y="-300" width="400" height="600" rx="36" fill="' + INK + '"/>' +
+    '<rect x="-186" y="-286" width="372" height="572" rx="26" fill="' + BG + '"/>' +
+    '<g transform="translate(-160,-252) scale(.34)">' + logoMark('appLogo') + '</g>' +
+    '<text x="-116" y="-224" font-size="22">Anfragen</text>' +
+    '<g transform="translate(0,-172)"><rect x="-176" y="-26" width="352" height="52" rx="26" fill="' + WH + '" ' + SK + ' stroke-width="4"/>' +
+    '<circle cx="-146" cy="-2" r="10" fill="none" ' + SK + ' stroke-width="4"/><path d="M-139,5 L-131,13" ' + SK + ' stroke-width="4"/>' +
+    '<text x="-118" y="8" font-size="22" class="ui" style="font-weight:700">Magdeburg · ab sofort</text></g>' +
+    listItem('li1', -76, 'Dresden', '6 Personen · 2 Wochen') +
+    listItem('li2', 26, 'Magdeburg', '12 Personen · ab sofort', true) +
+    listItem('li3', 128, 'Leipzig', '8 Personen · 3 Wochen') +
+    '<g transform="translate(0,232)"><g id="buyBtn"><rect x="-176" y="-38" width="352" height="76" rx="38" fill="' + Y + '" ' + SK + ' stroke-width="5"/><text y="11" text-anchor="middle" font-size="31">Anfrage kaufen</text></g></g>' +
+    '<circle id="tap2" cx="60" cy="232" r="40" fill="none" stroke="' + INK + '" stroke-width="5" opacity="0"/>' +
+    '<rect id="scan" x="-176" y="-120" width="352" height="8" rx="4" fill="' + Y + '" opacity="0"/>' +
+    '</g></g>' +
+    '<g transform="translate(1590,476)"><g id="flyCard">' + requestCard('flyCardI', 'Magdeburg', '12 Personen · ab sofort') + '</g></g>'
   );
 
   /* --- Handy --- */
@@ -394,14 +342,14 @@
     '<text x="-104" y="-294" font-size="27">Monteurzimmer<tspan fill="#D99B00">blick</tspan></text>' +
     '<path d="M-166,-252 H166" stroke="' + G2 + '" stroke-width="3"/>' +
     '<text x="-166" y="-206" font-size="22" class="ui" fill="' + G4 + '">Ihr Kunde möchte weiter</text>' +
-    '<g id="phoneCardSlot" transform="translate(0,-70) scale(1.0)"><g id="phoneCard">' + requestCard('phoneCardI', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>' +
+    '<g transform="translate(0,-70)"><g id="phoneCard">' + requestCard('phoneCardI', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>' +
     '<g transform="translate(0,90)"><g id="passBtn"><rect x="-166" y="-40" width="332" height="80" rx="40" fill="' + INK + '"/><text x="-26" y="11" text-anchor="middle" font-size="31" fill="' + WH + '">Weitergeben</text><path d="M92,0 H130 M114,-16 L130,0 L114,16" fill="none" stroke="' + Y + '" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g></g>' +
     '<circle id="tap1" cx="60" cy="90" r="44" fill="none" stroke="' + Y + '" stroke-width="6" opacity="0"/>' +
     '<rect x="-166" y="176" width="332" height="84" rx="20" fill="' + BG + '"/><rect x="-142" y="200" width="150" height="14" rx="7" fill="' + G3 + '"/><rect x="-142" y="226" width="220" height="12" rx="6" fill="' + G2 + '"/>' +
     '<rect x="-166" y="276" width="332" height="84" rx="20" fill="' + BG + '"/><rect x="-142" y="300" width="120" height="14" rx="7" fill="' + G3 + '"/><rect x="-142" y="326" width="200" height="12" rx="6" fill="' + G2 + '"/>' +
     '</g></g>'
   );
-  var BP = makeChar('S-phone', 'p', 'berger', { x: 520, y: 1210, s: 1.25 });
+  var BP = F.create($('S-phone'), 'p', 'berger', { x: 700, y: 1235, s: 1.3 });
 
   /* --- Karte --- */
   var MD = CITY.magdeburg, HH = CITY.hamburg;
@@ -419,18 +367,15 @@
     '<path id="arcMH" d="' + ARC_MH + '" fill="none" stroke="' + INK + '" stroke-width="5" stroke-dasharray="2 13" stroke-linecap="round" mask="url(#trailMask1)"/>' +
     '<path id="arcHM" d="' + ARC_HM + '" fill="none" stroke="' + INK + '" stroke-width="5" stroke-dasharray="2 13" stroke-linecap="round" mask="url(#trailMask2)"/>' +
     '<g transform="scale(.62)">' + mapPin('mpHH', HH[0] / 0.62, HH[1] / 0.62, 'Hamburg', 'left') + mapPin('mpMD', MD[0] / 0.62, MD[1] / 0.62, 'Magdeburg', 'right') + '</g>' +
-    '<g id="mapCardW"><g id="mapCard">' + requestCard('mapCardI', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>' +
+    '<g id="mapCardW"><g id="mapCard">' + requestCard('mapCardI', 'Hamburg', '6 Personen · 4 Wochen') + '<g transform="translate(150,-86)"><g id="mapOk">' + checkBadge('mapOkI', 34) + '</g></g></g></g>' +
     '<g id="mapNoteW"><g id="mapNote">' + banknote('mapNoteI') + '</g></g>' +
-    '<g transform="translate(' + (MD[0] + 30) + ',' + (MD[1] + 44) + ') scale(.82)"><g id="plusGeld"><rect x="0" y="-38" width="330" height="76" rx="38" fill="' + INK + '"/><text x="165" y="13" text-anchor="middle" font-size="36" fill="' + WH + '"><tspan fill="' + Y + '">+ </tspan>Geld für Sie</text></g></g>' +
+    '<g transform="translate(' + (MD[0] + 30) + ',' + (MD[1] + 44) + ') scale(.82)"><g id="plusGeld"><rect x="0" y="-38" width="300" height="76" rx="38" fill="' + INK + '"/><text x="150" y="13" text-anchor="middle" font-size="36" fill="' + WH + '"><tspan fill="' + Y + '">+ </tspan>Provision</text></g></g>' +
     '<g id="burst" transform="translate(' + MD[0] + ',' + (MD[1] - 25) + ')"></g>'
   );
   (function () {
     var b = '', i, a;
     for (i = 0; i < 10; i++) { a = i * Math.PI / 5; b += '<path class="ray" d="M' + (Math.cos(a) * 24).toFixed(1) + ',' + (Math.sin(a) * 24).toFixed(1) + ' L' + (Math.cos(a) * 44).toFixed(1) + ',' + (Math.sin(a) * 44).toFixed(1) + '" stroke="' + Y + '" stroke-width="5" stroke-linecap="round"/>'; }
     $('burst').innerHTML = b;
-  })();
-
-  (function () {
     var d = '';
     Object.keys(CITY).forEach(function (k) {
       if (k === 'magdeburg' || k === 'hamburg') return;
@@ -454,40 +399,68 @@
     cloud('hcl1', 1720, 330, 0.8) + cloud('hcl2', 820, 120, 0.7) +
     '<rect x="-10" y="820" width="1940" height="270" fill="' + G1 + '"/><path d="M-10,820 H1930" stroke="' + INK + '" stroke-width="7"/>' +
     hhHouse() + mapPin('pinHH', 484, 150, 'Hamburg', 'right') +
-    '<g transform="translate(1000,262)"><g id="badge"><path d="M0,-58 L46,-40 V2 C46,34 24,54 0,64 C-24,54 -46,34 -46,2 V-40 Z" fill="' + Y + '" ' + SK + ' stroke-width="6"/><path d="M-20,2 L-5,18 L22,-14" fill="none" ' + SK + ' stroke-width="8"/></g></g>' +
-    '<g transform="translate(990,376)"><g id="hhCard">' + requestCard('hhCardI', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>'
+    '<g transform="translate(906,250)"><g id="badge"><path d="M0,-58 L46,-40 V2 C46,34 24,54 0,64 C-24,54 -46,34 -46,2 V-40 Z" fill="' + Y + '" ' + SK + ' stroke-width="6"/><path d="M-20,2 L-5,18 L22,-14" fill="none" ' + SK + ' stroke-width="8"/></g></g>' +
+    '<g id="hhCardW"><g id="hhCard">' + requestCard('hhCardI', 'Hamburg', '6 Personen · 4 Wochen') + '</g></g>'
   );
-  var LD = makeChar('S-hh', 'l', 'lady', { x: 880, y: 820, s: 0.86 });
-  var WK2 = makeChar('S-hh', 'w2', 'worker', { x: 2150, y: 820, s: 0.84, face: -1 });
-  $('w2-holdB').insertAdjacentHTML('beforeend', '<g transform="translate(0,10)"><rect x="-44" y="0" width="88" height="62" rx="10" fill="' + INK + '" ' + SK + ' stroke-width="4"/><rect x="-44" y="22" width="88" height="12" fill="' + Y + '"/><path d="M-22,0 Q0,-24 22,0" fill="none" ' + SK + ' stroke-width="6"/></g>');
+  var K = F.create($('S-hh'), 'k', 'kollege', { x: 820, y: 820, s: 0.9 });
+  var WK2 = F.create($('S-hh'), 'w2', 'worker', { x: 1720, y: 820, s: 0.88, face: -1 });
+  WK2.holdB.insertAdjacentHTML('beforeend', BAG);
 
-  /* --- Zusammenfassung --- */
-  function rowIcon(kind) {
-    if (kind === 1) return '<rect x="-30" y="-22" width="44" height="30" rx="6" fill="' + WH + '" ' + SK + ' stroke-width="5"/><path d="M4,14 H34 M24,4 L34,14 L24,24" fill="none" ' + SK + ' stroke-width="6"/>';
-    if (kind === 2) return '<circle r="26" fill="' + WH + '" ' + SK + ' stroke-width="5"/><text y="12" text-anchor="middle" font-size="34">€</text>';
-    return '<path d="M-28,-2 L0,-26 L28,-2 V28 H-28 Z" fill="' + WH + '" ' + SK + ' stroke-width="5"/><rect x="-10" y="4" width="20" height="18" fill="' + INK + '"/>';
-  }
-  function row(id, y, kind, txt) {
-    return '<g transform="translate(200,' + y + ')"><g id="' + id + '"><g class="ico"><rect x="-56" y="-56" width="112" height="112" rx="26" fill="' + Y + '" ' + SK + ' stroke-width="6"/>' + rowIcon(kind) + '</g>' +
-      '<g class="txtClip"><text x="96" y="34" font-size="100" style="letter-spacing:-.035em">' + txt + '</text></g></g></g>';
-  }
-  put('S-recap',
+  /* --- Rendite --- */
+  put('S-yield',
     '<rect width="1920" height="1080" fill="' + BG + '"/>' +
-    '<g transform="translate(1250,110) scale(.84)"><g id="net"><path d="' + DE_PATH + '" fill="' + WH + '" stroke="' + INK + '" stroke-width="7" stroke-linejoin="round" transform="translate(-634.5,-100)"/><g id="netArcs" transform="translate(-634.5,-100)"></g><g id="netPins" transform="translate(-634.5,-100)"></g></g></g>' +
-    row('r1', 330, 1, 'Weitergeben') + row('r2', 530, 2, 'Mitverdienen') + row('r3', 730, 3, 'Leerstand füllen')
+    '<rect x="-10" y="860" width="1940" height="230" fill="' + G1 + '"/><path d="M-10,860 H1930" stroke="' + INK + '" stroke-width="7"/>' +
+    '<g id="chart">' +
+    '<path id="axis" d="M420,820 H1270" stroke="' + INK + '" stroke-width="6" stroke-linecap="round"/>' +
+    '<rect id="barA" x="500" y="520" width="200" height="300" rx="10" fill="' + G3 + '" ' + SK + ' stroke-width="6"/>' +
+    '<text id="lblA" x="600" y="685" text-anchor="middle" font-size="32" fill="' + INK + '">Miete</text>' +
+    '<text id="capA" x="600" y="920" text-anchor="middle" font-size="36" class="ui" style="font-weight:700">Vorher</text>' +
+    '<rect id="barB" x="880" y="520" width="200" height="300" rx="10" fill="' + G3 + '" ' + SK + ' stroke-width="6"/>' +
+    '<rect id="barP" x="880" y="400" width="200" height="0" rx="10" fill="' + Y + '" ' + SK + ' stroke-width="6"/>' +
+    '<text id="lblB" x="980" y="685" text-anchor="middle" font-size="32" fill="' + INK + '">Miete</text>' +
+    '<text id="lblP" x="980" y="338" text-anchor="middle" font-size="30" fill="' + INK + '">Provision</text>' +
+    '<text id="capB" x="980" y="920" text-anchor="middle" font-size="36" class="ui" style="font-weight:700">Heute</text>' +
+    '<g transform="translate(1210,430)"><g id="chipBel"><rect x="-110" y="-32" width="230" height="64" rx="32" fill="' + WH + '" ' + SK + ' stroke-width="5"/><text x="5" y="11" text-anchor="middle" font-size="28">Mehr belegt</text></g></g>' +
+    '<g id="yCoins">' + [0, 1, 2].map(function (i) { return '<g transform="translate(' + (930 + i * 50) + ',0)"><g id="yc' + i + '">' + coin('yci' + i, 22) + '</g></g>'; }).join('') + '</g>' +
+    '<path id="yArrow" d="M610,480 C640,280 820,170 1100,190" fill="none" stroke="' + INK + '" stroke-width="8" stroke-linecap="round"/>' +
+    '<g transform="translate(1112,191) rotate(4)"><g id="yHead"><path d="M-26,-22 L6,0 L-26,22" fill="none" ' + SK + ' stroke-width="8"/></g></g>' +
+    '</g>'
   );
-  var NET_PAIRS = [['hamburg', 'magdeburg'], ['magdeburg', 'leipzig'], ['koeln', 'frankfurt'], ['berlin', 'dresden'], ['muenchen', 'nuernberg'], ['dortmund', 'hannover'], ['stuttgart', 'muenchen'], ['bremen', 'hamburg'], ['erfurt', 'frankfurt'], ['rostock', 'berlin'], ['leipzig', 'nuernberg'], ['kiel', 'hamburg']];
+  var BR = F.create($('S-yield'), 'br', 'berger', { x: 1580, y: 860, s: 0.95, face: -1 });
+
+  /* --- Von Stadt zu Stadt --- */
+  var ROUTE = ['magdeburg', 'hamburg', 'berlin', 'leipzig', 'nuernberg'];
+  put('S-route',
+    '<rect width="1920" height="1080" fill="' + BG + '"/>' +
+    '<rect x="-10" y="900" width="900" height="190" fill="' + G1 + '"/><path d="M-10,900 H880" stroke="' + INK + '" stroke-width="7" stroke-linecap="round"/>' +
+    '<g transform="translate(1110,70) scale(.92)"><g id="rmap" transform="translate(-634.5,-100)">' +
+    '<path d="' + DE_PATH + '" fill="' + WH + '" stroke="' + INK + '" stroke-width="7" stroke-linejoin="round"/>' +
+    '<g id="rArcs"></g><g id="rStops"></g><g id="rVanW"><g id="rVan"><g transform="scale(1.25)">' + van('rVanI') + '</g></g></g>' +
+    '</g></g>'
+  );
   (function () {
-    var arcs = '', pins = '';
-    NET_PAIRS.forEach(function (pr, i) {
-      arcs += '<path id="na' + i + '" d="' + arc(CITY[pr[0]], CITY[pr[1]], 0.3) + '" fill="none" stroke="' + INK + '" stroke-width="5" stroke-linecap="round"/>' +
-        '<g id="nc' + i + '" transform="translate(' + CITY[pr[0]][0].toFixed(1) + ',' + CITY[pr[0]][1].toFixed(1) + ')"><rect x="-22" y="-14" width="44" height="28" rx="6" fill="' + Y + '" ' + SK + ' stroke-width="4"/></g>';
+    var a = '', s = '';
+    for (var i = 0; i < ROUTE.length - 1; i++) a += '<path id="ra' + i + '" d="' + arc(CITY[ROUTE[i]], CITY[ROUTE[i + 1]], -0.3) + '" fill="none" stroke="' + INK + '" stroke-width="6" stroke-dasharray="2 14" stroke-linecap="round"/>';
+    ROUTE.forEach(function (k, i) {
+      s += '<g transform="translate(' + CITY[k][0].toFixed(1) + ',' + (CITY[k][1] - 6).toFixed(1) + ') scale(1.5)"><g id="rs' + i + '">' + smallHouse('rsh' + i) + '<g transform="translate(24,-18)">' + checkBadge('rsc' + i, 16) + '</g></g></g>';
     });
-    Object.keys(CITY).forEach(function (k, i) {
-      pins += '<g transform="translate(' + CITY[k][0].toFixed(1) + ',' + CITY[k][1].toFixed(1) + ')"><g id="np' + i + '"><circle r="13" fill="' + INK + '"/><circle r="5.5" fill="' + Y + '"/></g></g>';
-    });
-    $('netArcs').innerHTML = arcs; $('netPins').innerHTML = pins;
+    $('rArcs').innerHTML = a; $('rStops').innerHTML = s;
   })();
+  var WR = F.create($('S-route'), 'wr', 'worker', { x: 470, y: 900, s: 1.02 });
+
+  /* --- Alle gewinnen --- */
+  put('S-trio',
+    '<rect width="1920" height="1080" fill="' + WH + '"/>' +
+    '<rect x="-10" y="880" width="1940" height="210" fill="' + BG + '"/><path d="M-10,880 H1930" stroke="' + INK + '" stroke-width="7"/>' +
+    [['tl0', 520, 'Sie'], ['tl1', 960, 'Ihre Kollegen'], ['tl2', 1400, 'Ihre Kunden']].map(function (v) {
+      var w = v[2].length * 20 + 70;
+      return '<g transform="translate(' + v[1] + ',960)"><g id="' + v[0] + '"><rect x="' + (-w / 2) + '" y="-34" width="' + w + '" height="68" rx="34" fill="' + INK + '"/><text y="12" text-anchor="middle" font-size="34" fill="' + WH + '">' + v[2] + '</text></g></g>';
+    }).join('') +
+    [0, 1, 2].map(function (i) { return '<g transform="translate(' + (520 + i * 440) + ',330)"><g id="tc' + i + '">' + checkBadge('tci' + i, 40) + '</g></g>'; }).join('')
+  );
+  var B3 = F.create($('S-trio'), 'b3', 'berger', { x: 520, y: 880, s: 0.95 });
+  var K3 = F.create($('S-trio'), 'k3', 'kollege', { x: 960, y: 880, s: 0.95 });
+  var W3 = F.create($('S-trio'), 'w3', 'worker', { x: 1400, y: 880, s: 0.93, face: -1 });
 
   /* --- Abschluss --- */
   put('S-cta',
@@ -500,8 +473,8 @@
     '<text id="url" class="mono" x="960" y="800" text-anchor="middle" font-size="42" fill="' + INK + '"></text>' +
     '<rect id="caret" x="0" y="766" width="5" height="44" fill="' + INK + '" opacity="0"/>'
   );
-  var BC = makeChar('S-cta', 'bc', 'berger', { x: 300, y: 1150, s: 1.08 });
-  var WC = makeChar('S-cta', 'wc', 'worker', { x: 1620, y: 1150, s: 1.06, face: -1 });
+  var BC = F.create($('S-cta'), 'bc', 'berger', { x: 300, y: 1150, s: 1.1 });
+  var KC = F.create($('S-cta'), 'kc', 'kollege', { x: 1620, y: 1150, s: 1.1, face: -1 });
 
   /* --- Einblendungen --- */
   var CAPS = {};
@@ -511,11 +484,7 @@
     el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.fontSize = size + 'px';
     if (align === 'center') { el.style.left = '0'; el.style.width = '1920px'; el.style.textAlign = 'center'; }
     el.innerHTML = lines.map(function (ln) {
-      return '<span class="ln">' + ln.split(' ').map(function (w) {
-        var hl = w.charAt(0) === '*';
-        if (hl) w = w.slice(1);
-        return '<span class="m"><span class="w' + (hl ? ' hl' : '') + '">' + w + '</span></span>';
-      }).join(' ') + '</span>';
+      return '<span class="ln">' + ln.split(' ').map(function (w) { return '<span class="m"><span class="w">' + w + '</span></span>'; }).join(' ') + '</span>';
     }).join('');
     $('caps').appendChild(el);
     CAPS[id] = el;
@@ -524,13 +493,17 @@
   caption('capWeg1', ['Anfrage weg.'], 120, 96, 104);
   caption('capWeg2', ['Geld weg.'], 120, 210, 104);
   caption('capPass', ['Weitergeben.'], 120, 150, 112);
-  caption('capGeprueft', ['Geprüfter Partner.'], 1080, 120, 84);
+  caption('capGeprueft', ['Geprüfter Vermieter.'], 1010, 120, 76);
   caption('capOhne', ['Ohne neues', 'Zimmer.'], 120, 96, 100);
   caption('capVoll', ['Leerstand', 'gefüllt.'], 120, 96, 100);
-  caption('capMehr', ['Mehr aus', '*jedem *Kunden.'], 120, 330, 150);
+  caption('capRendite', ['Mehr Rendite je Wohnung.'], 120, 64, 84);
+  caption('capStadt', ['Von Stadt', 'zu Stadt.'], 120, 110, 100);
+  caption('capStress', ['Ohne Stress.'], 120, 110, 100);
+  caption('capWin', ['Win-win-win.'], 0, 90, 132, 'center');
 
   /* ================= Timeline ================= */
   var tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
+  var G = F.gestures(tl);
 
   function show(el, t) { tl.set(el, { visibility: 'visible' }, t); }
   function hideAt(el, t) { tl.set(el, { visibility: 'hidden' }, t); }
@@ -554,44 +527,6 @@
     tl.set(CAPS[id], { visibility: 'hidden' }, t + 0.6);
   }
   gsap.set('.cap', { visibility: 'hidden' });
-  function walk(c, t, dur, toX, stepDur) {
-    var steps = dur / (stepDur || 0.3);
-    tl.to(c.p, { x: toX, duration: dur, ease: 'power1.inOut' }, t);
-    tl.to(c.p, { walkPhase: '+=' + (Math.PI * steps).toFixed(3), duration: dur, ease: 'none' }, t);
-    tl.to(c.p, { walkAmp: 1, duration: 0.18, ease: 'power1.out' }, t);
-    tl.to(c.p, { walkAmp: 0, duration: 0.22, ease: 'power1.in' }, t + dur - 0.22);
-  }
-  function wave(c, t, n, arm) {
-    var up = arm === 'B' ? 'armBu' : 'armFu', lo = arm === 'B' ? 'armBl' : 'armFl', sgn = arm === 'B' ? -1 : 1;
-    var o1 = {}, o2 = {}, o3 = {};
-    o1[up] = -150 * sgn; o1[lo] = -12 * sgn; o1.duration = 0.35; o1.ease = 'back.out(1.8)';
-    tl.to(c.p, o1, t);
-    for (var i = 0; i < n; i++) {
-      o2 = {}; o2[lo] = 22 * sgn; o2.duration = 0.2; o2.ease = 'sine.inOut';
-      o3 = {}; o3[lo] = -22 * sgn; o3.duration = 0.2; o3.ease = 'sine.inOut';
-      tl.to(c.p, o2, t + 0.35 + i * 0.4);
-      tl.to(c.p, o3, t + 0.55 + i * 0.4);
-    }
-    var back = {}; back[up] = -7 * sgn; back[lo] = 8 * sgn; back.duration = 0.4; back.ease = 'power2.inOut';
-    tl.to(c.p, back, t + 0.35 + n * 0.4);
-  }
-  function hop(c, t, h) {
-    tl.to(c.p, { sy: 0.9, duration: 0.1, ease: 'power2.out' }, t);
-    tl.to(c.p, { y: '-=' + (h || 30), sy: 1.05, duration: 0.18, ease: 'power2.out' }, t + 0.1);
-    tl.to(c.p, { y: '+=' + (h || 30), sy: 1, duration: 0.2, ease: 'power2.in' }, t + 0.28);
-    tl.to(c.p, { sy: 0.94, duration: 0.07 }, t + 0.48);
-    tl.to(c.p, { sy: 1, duration: 0.25, ease: 'back.out(3)' }, t + 0.55);
-  }
-  function popChar(c, t) {
-    tl.fromTo(c.p, { sy: 0.2, op: 0 }, { sy: 1, op: 1, duration: 0.55, ease: 'back.out(2.6)' }, t);
-  }
-  function nod(c, t, n) {
-    for (var i = 0; i < (n || 2); i++) {
-      tl.to(c.p, { head: 9, headY: 3, duration: 0.16, ease: 'sine.inOut' }, t + i * 0.34);
-      tl.to(c.p, { head: -2, headY: 0, duration: 0.18, ease: 'sine.inOut' }, t + 0.16 + i * 0.34);
-    }
-    tl.to(c.p, { head: 0, duration: 0.2 }, t + (n || 2) * 0.34);
-  }
   function mapCam(px, py, s, t, dur, ease) {
     tl.to('#mapcam', { x: 960 - px * s, y: 540 - py * s, scale: s, duration: dur, ease: ease || 'power3.inOut' }, t);
   }
@@ -602,13 +537,28 @@
     tl.to(el, { scale: 0.92, duration: 0.09, ease: 'power2.out', transformOrigin: '50% 50%' }, t);
     tl.to(el, { scale: 1, duration: 0.35, ease: 'back.out(3)' }, t + 0.09);
   }
+  function wipeAt(t) {
+    tl.set('#wipe', { visibility: 'visible' }, t);
+    tl.fromTo('#wipe', { x: 0 }, { x: -2400, duration: 0.45, ease: 'power3.in', immediateRender: false }, t);
+    tl.to('#wipe', { x: -5200, duration: 0.5, ease: 'power3.out' }, t + 0.45);
+    tl.set('#wipe', { visibility: 'hidden' }, t + 1.0);
+    sfx('whoosh', t + 0.1, 0.8);
+  }
+  /* Handposition einer Figur in einer bestimmten Pose (ohne die Figur zu verändern) */
+  function handAt(c, pose) {
+    var keep = c.p;
+    c.p = Object.assign({}, keep, pose);
+    var h = F.handPos(c);
+    c.p = keep;
+    return h;
+  }
 
   /* Startzustände */
   gsap.set('#L-street', { visibility: 'visible' });
   gsap.set('#mapcam', { x: 0, y: 0, scale: 1 });
-  gsap.set(['#stars g[id^=st]', '#bubble', '#cardA', '#coin', '#buyCard', '#calloutTag', '#pinMD .lbl'], { opacity: 0 });
+  gsap.set(['#stars g[id^=st]', '#bubble', '#cardA', '#coin', '#app', '#flyCard', '#calloutTag', '#pinMD .lbl', '#mapOk', '#hhCard', '#chipBel', '#yCoins g[id^=yc]', '#yHead', '#rVan'], { opacity: 0 });
   /* Karten, Geld und Münze skalieren um ihre Mitte (GSAP nimmt bei SVG sonst die linke obere Ecke) */
-  gsap.set(['#mapCard', '#mapNote', '#hhCard', '#cardA', '#coin', '#phoneCard', '#buyCard', '#plusGeld'], { transformOrigin: '50% 50%' });
+  gsap.set(['#mapCard', '#mapNote', '#hhCard', '#cardA', '#coin', '#phoneCard', '#flyCard', '#app', '#plusGeld', '#rVan'], { transformOrigin: '50% 50%' });
 
   /* ---------- Szene 1: Herr Berger in Magdeburg ---------- */
   (function () {
@@ -621,23 +571,24 @@
     pop('#treeA', 0.35, { origin: '50% 100%' });
     pop('#bush', 0.5, { origin: '50% 100%' });
     ['#cl1', '#cl2', '#cl3'].forEach(function (c, i) { tl.fromTo(c, { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power2.out' }, 0.2 + i * 0.15); });
-    tl.to('#clouds', { x: 70, duration: 31, ease: 'none' }, 0);
+    tl.to('#clouds', { x: 70, duration: 34, ease: 'none' }, 0);
     gsap.set('#S-street', { transformOrigin: '50% 72%' });
-    tl.fromTo('#S-street', { scale: 1 }, { scale: 1.05, duration: 17.5, ease: 'none' }, 0);
+    tl.fromTo('#S-street', { scale: 1 }, { scale: 1.05, duration: 18, ease: 'none' }, 0);
     sfx('whoosh', 0.02, 0.5); sfx('thud', 0.55, 0.6); sfx('pop', 0.5, 0.35); sfx('pop', 0.64, 0.35);
-    popChar(B, 0.55); sfx('pop', 0.6, 0.6);
-    wave(B, at('Herr') - 0.05, 3, 'F');
+    G.enter(B, 0.5); sfx('pop', 0.55, 0.4);
+    G.wave(B, at('Herr') - 0.3, 2);
     tl.fromTo('#calloutLine', { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: 0.4, ease: 'power2.out' }, at('Herr'));
     pop('#calloutTag', at('Herr') + 0.25, { dur: 0.5 }); sfx('pop', at('Herr') + 0.25, 0.7);
     tl.to('#calloutLine', { drawSVG: '100% 100%', duration: 0.35, ease: 'power2.in' }, at('Er') + 0.6);
     tl.to('#calloutLine', { opacity: 0, duration: 0.01 }, at('Er') + 0.95);
     unpop('#calloutTag', at('Er') + 0.5);
-    tl.to(B.p, { head: 8, duration: 0.4, ease: 'sine.inOut' }, at('Monteurzimmer') - 0.2);
+    /* Herr Berger schaut zu seinem Haus */
+    tl.to(B.p, { lookX: 5, headRot: -3, duration: 0.4, ease: 'sine.inOut' }, at('Monteurzimmer') - 0.3);
+    T.flash = at('Monteurzimmer') - 0.1;
     tl.fromTo('#board', { scaleY: 1 }, { scaleY: 0, duration: 0.14, ease: 'power2.in', immediateRender: false }, at('Monteurzimmer') - 0.1);
     tl.to('#board', { scaleY: 1, duration: 0.4, ease: 'back.out(3)' }, at('Monteurzimmer') + 0.04);
-    T.flash = at('Monteurzimmer') - 0.1;
     sfx('tick', at('Monteurzimmer'), 0.5);
-    tl.to(B.p, { head: 0, duration: 0.4 }, at('Magdeburg'));
+    tl.to(B.p, { lookX: 0, headRot: 0, duration: 0.4, ease: 'sine.inOut' }, at('Magdeburg') + 0.2);
     tl.fromTo('#pinMD .pin', { y: -260, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: 'bounce.out' }, at('Magdeburg') - 0.35);
     tl.fromTo('#pinMD .lbl', { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: 'back.out(2)' }, at('Magdeburg') + 0.05);
     sfx('pop', at('Magdeburg') - 0.05, 0.7);
@@ -647,18 +598,19 @@
   (function () {
     var t = at('Seine');
     unpop('#pinMD', t - 0.25, { origin: '50% 100%' });
-    tl.to('#doorLeaf', { scaleX: 0.12, transformOrigin: '0% 50%', duration: 0.35, ease: 'power2.out' }, t - 0.1);
-    tl.set(WK.p, { op: 1 }, t + 0.12);
-    tl.fromTo(WK.p, { s: 0.6, y: 800 }, { s: 0.84, y: 820, duration: 0.35, ease: 'power2.out', immediateRender: false }, t + 0.12);
-    walk(WK, t + 0.3, 1.2, 1500, 0.3);
+    tl.to('#doorLeaf', { scaleX: 0.12, transformOrigin: '0% 50%', duration: 0.35, ease: 'power2.out' }, t - 0.2);
+    tl.fromTo(WK.p, { op: 0, s: 0.7, y: 806 }, { op: 1, s: 0.88, y: 820, duration: 0.35, ease: 'power2.out', immediateRender: false }, t);
+    var dur = G.walk(WK, t + 0.2, 1500, 0.34);
     tl.to('#doorLeaf', { scaleX: 1, duration: 0.3, ease: 'power2.in' }, t + 0.9);
-    sfx('whoosh', t + 0.2, 0.25);
-    tl.to(WK.p, { face: -1, duration: 0.14, ease: 'none' }, t + 1.55);
-    wave(WK, t + 1.6, 2, 'F');
-    tl.to(B.p, { head: -4, duration: 0.3 }, t + 1.6);
+    sfx('whoosh', t + 0.1, 0.25);
+    var tw = t + 0.2 + dur;
+    G.turn(WK, tw + 0.05, -1);
+    G.wave(WK, tw + 0.15, 2);
+    tl.to(B.p, { lookX: 7, duration: 0.4 }, t + 0.4);
     var tz = at('zufrieden');
     ['#st1', '#st2', '#st3'].forEach(function (s, i) { pop(s, tz - 0.1 + i * 0.13, { rot: -120, dur: 0.6 }); sfx('pop', tz - 0.1 + i * 0.13, 0.45 + i * 0.1); });
-    ['#st1', '#st2', '#st3'].forEach(function (s, i) { tl.to(s, { y: -10, duration: 0.8, ease: 'sine.inOut', yoyo: true, repeat: 3 }, tz + 0.6 + i * 0.1); });
+    ['#st1', '#st2', '#st3'].forEach(function (s, i) { tl.to(s, { y: -10, duration: 0.8, ease: 'sine.inOut', yoyo: true, repeat: 1 }, tz + 0.6 + i * 0.1); });
+    G.mood(B, tz, 1, { brow: 0.5 }); G.nod(B, tz + 0.1, 2); G.mood(B, tz + 1.1, 0, { brow: 0 });
     var tb = at('doch');
     ['#st1', '#st2', '#st3'].forEach(function (s, i) { unpop(s, tb - 0.1 + i * 0.05, { dur: 0.25 }); });
     pop('#bubble', tb + 0.05, { from: 0.2, origin: '0% 100%', dur: 0.6 }); sfx('pop', tb + 0.05, 0.7);
@@ -667,7 +619,7 @@
     tl.to('#crane .crw', { opacity: 1, duration: 0.2 }, at('Baustelle') + 0.5);
     tl.fromTo('#bubbleTxt', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'back.out(2)' }, at('Hamburg') - 0.05);
     sfx('tick', at('Hamburg'), 0.5);
-    tl.to(WK.p, { head: -8, duration: 0.3 }, tb);
+    tl.to(WK.p, { lookY: -3, headRot: -6, duration: 0.4 }, tb + 0.1);
   })();
 
   /* ---------- Szene 3: Früher war die Anfrage weg ---------- */
@@ -677,17 +629,15 @@
     tl.set('#cardA', { opacity: 1 }, t);
     tl.fromTo('#cardA', { scale: 0.2, x: 0, y: 0, rotation: -10 }, { scale: 0.62, x: -790, y: 40, rotation: 4, duration: 0.8, ease: 'power3.inOut', immediateRender: false }, t);
     sfx('whoosh', t, 0.4);
-    tl.to(WK.p, { head: 0, face: -1, duration: 0.2 }, t);
+    tl.to(WK.p, { lookY: 0, headRot: 0, duration: 0.3 }, t);
     tl.to('#cardA', { rotation: -3, duration: 0.5, ease: 'sine.inOut', yoyo: true, repeat: 3 }, t + 0.8);
-    var ts = at('kein');
-    tl.to(B.p, { armFu: -40, armFl: -95, armBu: 40, armBl: 95, bob: -6, head: 10, duration: 0.3, ease: 'back.out(2)' }, ts - 0.1);
-    tl.to(B.p, { head: -8, duration: 0.18, ease: 'sine.inOut', yoyo: true, repeat: 3 }, ts + 0.2);
-    tl.to(B.p, { armFu: -7, armFl: 8, armBu: 7, armBl: -8, bob: 0, head: 0, duration: 0.35 }, ts + 1.1);
+    tl.to(B.p, { lookX: 4, lookY: -4, headRot: -6, duration: 0.35 }, t + 0.3);
+    G.shrug(B, at('kein') - 0.15, 0.7);
     var tf = at('Früher');
     tl.fromTo('#L-street', { filter: 'saturate(1) brightness(1)' }, { filter: 'saturate(0) brightness(0.97)', duration: 0.6, ease: 'power2.inOut' }, tf - 0.15);
     sfx('down', tf - 0.1, 0.45);
-    tl.to(WK.p, { face: 1, duration: 0.14, ease: 'none' }, tf + 0.1);
-    walk(WK, tf + 0.2, 1.7, 2150, 0.3);
+    G.turn(WK, tf + 0.15, 1);
+    G.walk(WK, tf + 0.3, 2150, 0.34);
     var tw = at('weg');
     tl.to('#cardA', { y: -140, x: -720, rotation: 18, scale: 0.4, opacity: 0, duration: 0.5, ease: 'power2.in' }, tw - 0.35);
     sfx('whoosh', tw - 0.3, 0.35);
@@ -697,17 +647,8 @@
     tl.to('#coin', { y: 160, rotation: 40, scale: 0.6, opacity: 0, duration: 0.55, ease: 'power2.in' }, tg + 0.35);
     sfx('drop', tg + 0.4, 0.5);
     capIn('capWeg2', tg + 0.25);
-    tl.to(B.p, { head: 12, headY: 6, duration: 0.5, ease: 'power2.inOut' }, tg);
+    tl.to(B.p, { mood: 2, worry: 1, lookX: 0, lookY: 3, headRot: 10, headY: 4, duration: 0.5, ease: 'power2.inOut' }, tg);
   })();
-
-  /* ---------- Übergang: gelber Wischer ---------- */
-  function wipeAt(t) {
-    tl.set('#wipe', { visibility: 'visible' }, t);
-    tl.fromTo('#wipe', { x: 0 }, { x: -2000 - 400, duration: 0.45, ease: 'power3.in' }, t);
-    tl.to('#wipe', { x: -2000 - 3200, duration: 0.5, ease: 'power3.out' }, t + 0.45);
-    tl.set('#wipe', { visibility: 'hidden' }, t + 1.0);
-    sfx('whoosh', t + 0.1, 0.8);
-  }
 
   /* ---------- Szene 4: Heute – weitergeben ---------- */
   (function () {
@@ -720,23 +661,24 @@
     show('#L-phone', sw);
     tl.fromTo('#phone', { y: 300, rotation: 8, scale: 0.9 }, { y: 0, rotation: 0, scale: 1, duration: 0.8, ease: 'expo.out' }, sw + 0.05);
     tl.fromTo(BP.p, { x: 420 }, { x: 700, duration: 0.8, ease: 'expo.out' }, sw + 0.05);
+    tl.to(BP.p, { lookX: 5, lookY: -2, duration: 0.4 }, sw + 0.3);
     tl.fromTo('#phoneCard', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(2.2)' }, at('Heute') + 0.1);
     sfx('pop', at('Heute') + 0.1, 0.6);
     var tp = at('weiter', 2);
-    tl.to(BP.p, { armFu: -96, armFl: -8, duration: 0.35, ease: 'back.out(1.8)' }, tp - 0.45);
-    tl.to(BP.p, { lean: 3, duration: 0.3 }, tp - 0.4);
+    G.point(BP, tp - 0.45, 6);
+    tl.to(BP.p, { mood: 1, brow: 0.5, duration: 0.01 }, tp);
     press('#passBtn', tp); tap('#tap1', tp); sfx('click', tp, 0.9);
     capIn('capPass', tp - 0.05);
     /* Karte hebt ab und schwebt, das Logo zuckt beim Namen */
     tl.to('#phoneCard', { y: -60, scale: 1.08, duration: 0.35, ease: 'back.out(2)' }, tp + 0.2);
-    tl.to('#phoneCard', { y: -74, duration: 0.5, ease: 'sine.inOut', yoyo: true, repeat: 2 }, tp + 0.55);
+    tl.to('#phoneCard', { y: -74, duration: 0.5, ease: 'sine.inOut', yoyo: true, repeat: 1 }, tp + 0.55);
+    G.rest(BP, tp + 0.6, 0.5);
     var tn = at('Monteurzimmerblick', 1);
     tl.fromTo('#phoneLogo', { scale: 1, transformOrigin: '50% 50%' }, { scale: 1.35, duration: 0.18, ease: 'power2.out', yoyo: true, repeat: 1 }, tn - 0.05);
     sfx('tick', tn - 0.05, 0.5);
     var tm = tn + 0.35;
     tl.to('#phoneCard', { y: -900, scale: 1.25, rotation: 12, duration: 0.42, ease: 'power3.in' }, tm - 0.3);
     sfx('whoosh', tm - 0.3, 0.6);
-    tl.to(BP.p, { armFu: -7, armFl: 8, lean: 0, duration: 0.3 }, tp + 0.5);
     capOut('capPass', tm - 0.25);
     /* Schnitt auf die Karte */
     show('#L-map', tm);
@@ -750,7 +692,7 @@
     tl.fromTo('#mapDots circle', { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.3, ease: 'back.out(3)', stagger: 0.04 }, tm + 0.5);
     pop('#mpMD', tm + 0.2, { origin: '50% 100%' }); sfx('pop', tm + 0.25, 0.5);
     pop('#mpHH', tm + 0.55, { origin: '50% 100%' }); sfx('pop', tm + 0.6, 0.5);
-    /* Karte fliegt nach Hamburg */
+    /* Karte fällt auf Magdeburg und fliegt nach Hamburg */
     gsap.set('#mapCardW', { x: MDc[0], y: MDc[1] });
     tl.fromTo('#mapCard', { scale: 0.7, opacity: 0, y: -520, rotation: 14 }, { scale: 0.42, opacity: 1, y: 0, rotation: 0, duration: 0.5, ease: 'back.out(1.4)' }, tm + 0.05);
     sfx('pop', tm + 0.5, 0.5);
@@ -764,86 +706,95 @@
     sfx('pop', tf + 1.1, 0.6);
   })();
 
-  /* ---------- Szene 5: Geprüfte Vermieterin in Hamburg ---------- */
+  /* ---------- Szene 5: Geprüfter Vermieter in Hamburg ---------- */
   (function () {
-    var t = at('Eine') - 0.55;
+    var t = at('ein', 1) - 0.55;
     mapCam(HH[0], HH[1] - 40, 4.2, t - 0.1, 0.8, 'power3.in');
     show('#L-hh', t + 0.2);
     tl.fromTo('#L-hh', { clipPath: 'circle(0px at 960px 420px)' }, { clipPath: 'circle(2300px at 960px 420px)', duration: 0.75, ease: 'power3.inOut' }, t + 0.2);
     hideAt('#L-map', t + 0.95);
     sfx('whoosh', t + 0.15, 0.7);
     pop('#pinHH', t + 0.5, { origin: '50% 100%' });
-    popChar(LD, t + 0.3); sfx('pop', t + 0.3, 0.5);
-    wave(LD, at('Vermieterin') + 0.05, 1, 'F');
-    pop('#badge', at('geprüfte') + 0.9, { rot: -30, dur: 0.6 }); sfx('pop', at('geprüfte') + 0.9, 0.7);
-    capIn('capGeprueft', at('geprüfte') + 0.05);
-    /* Karte kommt geflogen und wird gefangen */
-    var tc = at('übernimmt');
-    gsap.set('#hhCard', { opacity: 0, x: 900, y: -420, scale: 0.5 });
-    tl.set('#hhCard', { opacity: 1 }, tc - 0.7);
-    tl.to('#hhCard', { motionPath: { path: [{ x: 900, y: -420 }, { x: 380, y: -260 }, { x: 0, y: 0 }], curviness: 1.2 }, rotation: -6, duration: 0.75, ease: 'power2.out' }, tc - 0.7);
-    sfx('whoosh', tc - 0.7, 0.5);
-    tl.to(LD.p, { armFu: -125, armFl: -18, armBu: -115, armBl: -10, head: -10, duration: 0.35, ease: 'back.out(2)' }, tc - 0.4);
-    hop(LD, tc + 0.05, 24);
-    tl.to('#hhCard', { y: 16, duration: 0.14, ease: 'power2.out' }, tc + 0.05);
-    tl.to('#hhCard', { y: 0, duration: 0.3, ease: 'back.out(3)' }, tc + 0.19);
+    /* Der Kunde kommt in Hamburg an und bleibt dort stehen, wo später der Handschlag passt */
+    var shakePose = { armFu: -62, armFl: -26, handF: -80, lean: 2.5, bob: 0 };
+    var hk = handAt(K, shakePose), hw = handAt(WK2, Object.assign({ x: 0, face: -1 }, shakePose));
+    G.walk(WK2, t + 0.1, hk.x - hw.x, 0.34);
+    G.wave(K, at('Vermieter') - 0.2, 1);
+    pop('#badge', at('geprüfter') + 0.9, { rot: -30, dur: 0.6 }); sfx('pop', at('geprüfter') + 0.9, 0.7);
+    capIn('capGeprueft', at('geprüfter') + 0.05);
+    /* Anfrage kommt geflogen, der Vermieter fängt sie */
+    var tc = at('übernimmt') - 0.2;
+    var reach = { armFu: -132, armFl: -22, handF: -10, armBu: -120, armBl: -18, handB: -10 };
+    var h = handAt(K, reach);
+    var cx = h.x + 10, cy = h.y - 42;
+    gsap.set('#hhCard', { x: cx + 900, y: cy - 400, scale: 0.4 });
+    tl.set('#hhCard', { opacity: 1 }, tc - 0.6);
+    tl.to('#hhCard', { motionPath: { path: [{ x: cx + 900, y: cy - 400 }, { x: cx + 380, y: cy - 220 }, { x: cx, y: cy }], curviness: 1.2 }, rotation: -6, duration: 0.65, ease: 'power2.out' }, tc - 0.6);
+    sfx('whoosh', tc - 0.6, 0.5);
+    G.reachUp(K, tc - 0.35);
+    tl.to('#hhCard', { y: cy + 12, duration: 0.14, ease: 'power2.out' }, tc + 0.05);
+    tl.to('#hhCard', { y: cy, duration: 0.3, ease: 'back.out(3)' }, tc + 0.19);
     sfx('pop', tc + 0.05, 0.6);
-    capOut('capGeprueft', at('Kunden', 2) + 0.2);
-    /* Der Kunde kommt an */
-    walk(WK2, tc + 0.1, 0.9, 1330, 0.28);
-    wave(WK2, tc + 1.05, 1, 'F');
-    tl.to('#hhCard', { y: 300, x: -470, scale: 0.12, opacity: 0, duration: 0.45, ease: 'power3.in' }, tc + 0.8);
-    tl.to(LD.p, { armFu: -7, armFl: 8, armBu: 7, armBl: -8, head: 0, duration: 0.4 }, tc + 0.85);
-    wave(LD, tc + 1.2, 1, 'F');
+    tl.to(K.p, { mood: 1, brow: 0.6, duration: 0.01 }, tc + 0.1);
+    /* Karte wandert ins Haus, dann Handschlag mit dem Kunden */
+    tl.to('#hhCard', { x: 484, y: 780, scale: 0.08, opacity: 0, rotation: -20, duration: 0.45, ease: 'power3.in' }, tc + 0.55);
+    sfx('whoosh', tc + 0.55, 0.35);
+    G.rest(K, tc + 0.55, 0.35);
+    G.shake(K, tc + 0.95, 2); G.shake(WK2, tc + 0.95, 2);
+    capOut('capGeprueft', tc + 1.3);
   })();
 
-  /* ---------- Szene 6: Herr Berger verdient mit ---------- */
+  /* ---------- Szene 6: Provision für Herrn Berger ---------- */
   (function () {
-    var t = at('und', 2) - 0.5;
+    var t = at('und', 2) - 0.45;
     show('#L-map', t);
-    tl.set('#mapCard', { opacity: 0 }, t);
+    tl.set('#mapCard', { opacity: 1, scale: 0.42, rotation: 0, y: 0 }, t);
     tl.to('#L-hh', { clipPath: 'circle(0px at 960px 420px)', duration: 0.6, ease: 'power3.in' }, t);
     hideAt('#L-hh', t + 0.6);
     sfx('whoosh', t, 0.6);
     mapCam(MAPV[0], MAPV[1], MAPV[2], t + 0.15, 0.8, 'power3.out');
+    /* „vermittelte Anfrage“: Haken auf der Karte in Hamburg */
+    pop('#mapOk', at('vermittelte') + 0.1, { rot: -40 }); sfx('pop', at('vermittelte') + 0.1, 0.6);
+    /* Provision fliegt nach Magdeburg */
     gsap.set('#mapNoteW', { x: HHc[0], y: HHc[1] });
-    var tn = t + 0.55;
+    var tland = at('Provision');
+    var tn = tland - 1.35;
+    tl.to('#mapCard', { opacity: 0, scale: 0.3, duration: 0.3, ease: 'power2.in' }, tn - 0.1);
     tl.fromTo('#mapNote', { scale: 0, opacity: 0 }, { scale: 0.62, opacity: 1, duration: 0.4, ease: 'back.out(2.4)' }, tn);
     sfx('pop', tn, 0.5);
-    tl.to('#mapNoteW', { motionPath: { path: ARC_HM_C }, duration: 1.1, ease: 'power2.inOut' }, tn + 0.2);
-    tl.to('#mapNote', { rotation: 10, duration: 0.55, ease: 'sine.inOut', yoyo: true, repeat: 1 }, tn + 0.2);
-    tl.fromTo('#trail2', { drawSVG: '0%' }, { drawSVG: '100%', duration: 1.1, ease: 'power2.inOut' }, tn + 0.2);
-    sfx('whoosh', tn + 0.25, 0.6);
-    var tland = tn + 1.3;
+    tl.to('#mapNoteW', { motionPath: { path: ARC_HM_C }, duration: 1.1, ease: 'power2.inOut' }, tn + 0.25);
+    tl.to('#mapNote', { rotation: 10, duration: 0.55, ease: 'sine.inOut', yoyo: true, repeat: 1 }, tn + 0.25);
+    tl.fromTo('#trail2', { drawSVG: '0%' }, { drawSVG: '100%', duration: 1.1, ease: 'power2.inOut' }, tn + 0.25);
+    sfx('whoosh', tn + 0.3, 0.6);
     tl.to('#mapNote', { scale: 0.5, duration: 0.3, ease: 'back.out(3)' }, tland);
     tl.fromTo('#burst .ray', { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: 0.25, ease: 'power2.out' }, tland);
     tl.to('#burst .ray', { drawSVG: '100% 100%', duration: 0.3, ease: 'power2.in' }, tland + 0.25);
     pop('#plusGeld', tland + 0.05, { origin: '0% 50%' });
     sfx('ding', tland, 1);
     /* zurück zu Herrn Berger */
-    var tb = tland + 0.6;
+    var tb = tland + 0.5;
     mapCam(MD[0], MD[1] - 20, 4.2, tb - 0.2, 0.7, 'power3.in');
     show('#L-street', tb);
     tl.set('#L-street', { clipPath: 'circle(0px at 960px 460px)', zIndex: 5 }, tb);
     tl.to('#L-street', { clipPath: 'circle(2300px at 960px 460px)', duration: 0.7, ease: 'power3.inOut' }, tb);
     hideAt('#L-map', tb + 0.7);
     sfx('whoosh', tb, 0.6);
-    /* Bühne umbauen: Magdeburg ohne Kunde, mit Geld */
+    /* Bühne umbauen: Magdeburg ohne Kunde, Herr Berger mit Geld */
     tl.set(WK.p, { op: 0 }, tb - 0.1);
     tl.set('#S-street', { scale: 1 }, tb - 0.05);
-    tl.to('#S-street', { scale: 1.04, duration: 9, ease: 'none' }, tb);
-    tl.set(B.p, { head: 0, headY: 0, armFu: -30, armFl: -88, face: 1 }, tb - 0.05);
+    tl.to('#S-street', { scale: 1.04, duration: 10, ease: 'none' }, tb);
+    tl.set(B.p, { mood: 1, worry: 0, brow: 0.5, headRot: 0, headY: 0, lookX: 3, lookY: 2, armFu: -38, armFl: -78, handF: -6, face: 1 }, tb - 0.05);
     tl.set('#bNotes', { opacity: 1 }, tb - 0.05);
     gsap.set('#bn2, #bn3', { opacity: 0 });
-    var to = at('ohne');
+    var to = at('ohne', 1);
     capIn('capOhne', to);
-    tl.fromTo('#bn2', { opacity: 0, y: -60 }, { opacity: 1, y: 2, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, to + 0.45);
-    tl.fromTo('#bn3', { opacity: 0, y: -60 }, { opacity: 1, y: 6, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, to + 0.85);
+    tl.fromTo('#bn2', { opacity: 0, y: -40 }, { opacity: 1, y: 4, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, to + 0.45);
+    tl.fromTo('#bn3', { opacity: 0, y: -40 }, { opacity: 1, y: 10, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, to + 0.85);
     sfx('pop', to + 0.45, 0.4); sfx('pop', to + 0.85, 0.45);
-    nod(B, to + 0.3, 2);
+    G.nod(B, to + 0.3, 2);
   })();
 
-  /* ---------- Szene 7: Und umgekehrt – Leerstand füllen ---------- */
+  /* ---------- Szene 7: Und umgekehrt – gezielt Anfragen kaufen ---------- */
   (function () {
     var t = at('und', 3) - 0.25;
     tl.to('#L-street', { rotationY: 90, duration: 0.3, ease: 'power2.in', transformPerspective: 2400 }, t);
@@ -851,78 +802,170 @@
     capOut('capOhne', t - 0.3);
     /* Umbau während die Bühne auf der Kante steht */
     var tx = t + 0.3;
-    tl.set('#bNotes', { opacity: 0 }, tx);
-    tl.set(B.p, { armFu: -7, armFl: 8, face: 1, head: 0 }, tx);
     T.flip = tx;
     tl.set('#treeA', { opacity: 0 }, tx);
+    tl.set('#bNotes', { opacity: 0 }, tx);
+    tl.set(B.p, { armFu: F.REST.armFu, armFl: F.REST.armFl, handF: 0, mood: 0, brow: 0, lookX: 3, lookY: 0, headRot: 0 }, tx);
     tl.fromTo('#L-street', { rotationY: -90 }, { rotationY: 0, duration: 0.45, ease: 'back.out(1.4)', transformPerspective: 2400, immediateRender: false }, tx);
-    var tl2 = at('Stehen');
-    tl.to(B.p, { head: 8, duration: 0.3 }, tl2);
-    tl.fromTo('#tumbleWrap', { x: -120 }, { x: 2100, duration: 2.4, ease: 'none', immediateRender: false }, tl2 - 0.1);
-    tl.fromTo('#tumbleRot', { rotation: 0, y: 0 }, { rotation: 720, duration: 2.4, ease: 'none' }, tl2 - 0.1);
-    tl.to('#tumbleRot', { y: -26, duration: 0.2, ease: 'power1.out', yoyo: true, repeat: 11 }, tl2 - 0.1);
-    tl.to(B.p, { armFu: -40, armFl: -95, armBu: 40, armBl: 95, bob: -5, duration: 0.3, ease: 'back.out(2)' }, at('leer') - 0.1);
-    tl.to(B.p, { armFu: -7, armFl: 8, armBu: 7, armBl: -8, bob: 0, head: 0, duration: 0.35 }, at('leer') + 0.6);
-    var tk = at('leer') + 0.25;
-    pop('#buyCard', tk, { from: 0.4, dur: 0.6 }); sfx('pop', tk, 0.7);
-    var tt = at('Stadt') - 0.25;
-    tl.to(B.p, { armFu: -110, armFl: -10, duration: 0.3, ease: 'back.out(1.8)' }, tt - 0.35);
-    press('#buyBtn', tt); tap('#tap2', tt); sfx('click', tt, 0.9);
-    tl.to(B.p, { armFu: -7, armFl: 8, duration: 0.3 }, tt + 0.4);
-    tl.to('#buyCard', { scale: 0.18, x: -470, y: 330, opacity: 0, rotation: -20, duration: 0.55, ease: 'power3.in' }, tt + 0.35);
-    sfx('whoosh', tt + 0.35, 0.5);
-    tl.to('#doorLeaf', { scaleX: 0.12, transformOrigin: '0% 50%', duration: 0.2 }, tt + 0.7);
-    tl.to('#doorLeaf', { scaleX: 1, duration: 0.25 }, tt + 1.05);
-    var tbel = at('schnell');
+    /* Eine Wohnung steht leer */
+    var ts = at('Steht');
+    tl.fromTo('#tumbleWrap', { x: -120 }, { x: 2100, duration: 2.4, ease: 'none', immediateRender: false }, ts - 0.1);
+    tl.fromTo('#tumbleRot', { rotation: 0, y: 0 }, { rotation: 720, duration: 2.4, ease: 'none' }, ts - 0.1);
+    tl.to('#tumbleRot', { y: -26, duration: 0.2, ease: 'power1.out', yoyo: true, repeat: 11 }, ts - 0.1);
+    tl.to(B.p, { mood: 2, worry: 0.8, lookX: 5, lookY: -3, headRot: -4, duration: 0.4 }, at('Wohnung', 1) - 0.1);
+    /* Er schaut in der App nach einer passenden Anfrage */
+    var tl0 = at('schaut');
+    G.hold(B, tl0 - 0.35);
+    tl.to('#bPhone', { opacity: 1, duration: 0.15 }, tl0 - 0.2);
+    tl.to(B.p, { mood: 0, worry: 0, lookX: 6, lookY: 4, headRot: 8, duration: 0.35 }, tl0 - 0.2);
+    tl.fromTo('#app', { opacity: 0, scale: 0.6, y: 60 }, { opacity: 1, scale: 1, y: 0, duration: 0.55, ease: 'back.out(1.6)' }, tl0);
+    sfx('pop', tl0, 0.6);
+    ['#li1', '#li2', '#li3'].forEach(function (li, i) { tl.fromTo(li, { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'expo.out' }, tl0 + 0.3 + i * 0.1); });
+    gsap.set(['#buyBtn', '#li2 .ok'], { opacity: 0 });
+    /* Suchlinie läuft über die Liste, die passende Anfrage leuchtet auf */
+    var tp = at('passende');
+    tl.fromTo('#scan', { opacity: 0, y: 0 }, { opacity: 1, y: 30, duration: 0.2 }, tp - 0.75);
+    tl.to('#scan', { y: 280, duration: 0.7, ease: 'power1.inOut' }, tp - 0.6);
+    tl.to('#scan', { opacity: 0, duration: 0.15 }, tp + 0.1);
+    tl.to('#li2 .bgc', { attr: { fill: Y }, duration: 0.2 }, tp);
+    tl.fromTo('#li2', { scale: 1, transformOrigin: '50% 50%' }, { scale: 1.06, duration: 0.3, ease: 'back.out(3)' }, tp);
+    tl.to(['#li1', '#li3'], { opacity: 0.35, duration: 0.3 }, tp);
+    pop('#li2 .ok', tp + 0.15, { rot: -40 }); sfx('plink2', tp + 0.1, 0.8);
+    pop('#buyBtn', at('Anfrage', 3) + 0.3, { from: 0.6 });
+    tl.to(B.p, { mood: 1, brow: 0.6, duration: 0.01 }, tp + 0.2);
+    /* Gezielt kaufen – die Anfrage geht in genau diese Wohnung */
+    var tk = at('kauft');
+    press('#buyBtn', tk); tap('#tap2', tk); sfx('click', tk, 0.9);
+    tl.to('#app', { opacity: 0, scale: 0.85, duration: 0.3, ease: 'power2.in' }, tk + 0.3);
+    tl.set('#flyCard', { opacity: 1, scale: 1.05 }, tk + 0.25);
+    tl.to('#flyCard', { x: -510, y: 290, scale: 0.12, rotation: -20, duration: 0.6, ease: 'power3.in' }, tk + 0.35);
+    tl.set('#flyCard', { opacity: 0 }, tk + 0.95);
+    sfx('whoosh', tk + 0.35, 0.5);
+    tl.to('#bPhone', { opacity: 0, duration: 0.15 }, tk + 0.5);
+    G.rest(B, tk + 0.45, 0.4);
+    tl.to('#doorLeaf', { scaleX: 0.12, transformOrigin: '0% 50%', duration: 0.2 }, tk + 0.75);
+    tl.to('#doorLeaf', { scaleX: 1, duration: 0.25 }, tk + 1.1);
+    var tbel = at('genau');
     ['#win1', '#win2', '#win3', '#win4'].forEach(function (w, i) {
-      var ti = tbel + i * 0.16;
+      var ti = tbel + i * 0.15;
       tl.fromTo(w, { scale: 1.12, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.4, ease: 'back.out(3)', immediateRender: false }, ti);
       tl.fromTo(w + ' .guest', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3, immediateRender: false }, ti + 0.05);
       sfx('plink' + i, ti, 0.9);
     });
     T.light = tbel; T.boardBack = tbel + 0.64;
-    tl.fromTo('#board', { scaleY: 1 }, { scaleY: 0, duration: 0.12, immediateRender: false }, tbel + 0.58);
-    tl.to('#board', { scaleY: 1, duration: 0.35, ease: 'back.out(3)' }, tbel + 0.7);
-    capIn('capVoll', tbel + 0.25);
-    hop(B, tbel + 0.5, 22);
+    tl.fromTo('#board', { scaleY: 1 }, { scaleY: 0, duration: 0.12, immediateRender: false }, tbel + 0.52);
+    tl.to('#board', { scaleY: 1, duration: 0.35, ease: 'back.out(3)' }, tbel + 0.64);
+    capIn('capVoll', at('diese') - 0.1);
+    tl.to(B.p, { mood: 1, brow: 0.6, lookX: 4, lookY: -2, duration: 0.01 }, tbel);
+    G.nod(B, tbel + 0.5, 2);
   })();
 
-  /* ---------- Szene 8: Zusammenfassung ---------- */
+  /* ---------- Szene 8: Rendite je Wohnung ---------- */
   (function () {
-    var t = at('Weitergeben') - 0.75;
+    var t = at('das', 3) - 0.7;
     capOut('capVoll', t - 0.2);
-    show('#L-recap', t);
-    tl.fromTo('#L-recap', { x: 1920 }, { x: 0, duration: 0.6, ease: 'expo.inOut' }, t);
+    show('#L-yield', t);
+    tl.fromTo('#L-yield', { x: 1920 }, { x: 0, duration: 0.6, ease: 'expo.inOut' }, t);
     tl.to('#L-street', { x: -1920, duration: 0.6, ease: 'expo.inOut' }, t);
     hideAt('#L-street', t + 0.6);
     sfx('whoosh', t + 0.05, 0.7);
-    ['r1', 'r2', 'r3'].forEach(function (r, i) {
-      var tw = [at('Weitergeben'), at('mitverdienen'), at('Leerstand', 1)][i];
-      pop('#' + r + ' .ico', tw - 0.12, { rot: -40, dur: 0.55 });
-      tl.fromTo('#' + r + ' text', { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55, ease: 'expo.out' }, tw - 0.06);
-      sfx('thump', tw - 0.1, 0.8);
+    tl.fromTo('#axis', { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.6, ease: 'power2.out' }, t + 0.4);
+    tl.fromTo('#barA', { attr: { y: 820, height: 0 } }, { attr: { y: 520, height: 300 }, duration: 0.6, ease: 'back.out(1.4)' }, t + 0.55);
+    tl.fromTo('#barB', { attr: { y: 820, height: 0 } }, { attr: { y: 520, height: 300 }, duration: 0.6, ease: 'back.out(1.4)' }, t + 0.7);
+    tl.fromTo(['#lblA', '#lblB', '#capA', '#capB'], { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.06 }, t + 0.9);
+    gsap.set(['#lblP', '#yArrow'], { opacity: 0 });
+    sfx('pop', t + 0.6, 0.4); sfx('pop', t + 0.75, 0.4);
+    G.enter(BR, t + 0.5);
+    tl.to(BR.p, { lookX: 4, duration: 0.01 }, t + 0.5);
+    /* weniger Leerstand: Balken wächst */
+    var tw = at('weniger');
+    tl.to('#barB', { attr: { y: 400, height: 420 }, duration: 0.7, ease: 'back.out(1.6)' }, tw + 0.2);
+    tl.to('#lblB', { y: -60, duration: 0.7, ease: 'back.out(1.6)' }, tw + 0.2);
+    pop('#chipBel', tw + 0.5, { origin: '0% 50%' }); sfx('pop', tw + 0.5, 0.6);
+    /* Provisionen: gelber Anteil obendrauf, Münzen fallen hinein */
+    var tp = at('Provisionen');
+    tl.fromTo('#barP', { attr: { y: 400, height: 0 } }, { attr: { y: 250, height: 150 }, duration: 0.6, ease: 'back.out(1.6)' }, tp);
+    tl.fromTo('#lblP', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: 'back.out(2)', immediateRender: false }, tp + 0.25);
+    [0, 1, 2].forEach(function (i) {
+      tl.fromTo('#yc' + i, { opacity: 1, y: -80 }, { y: 300, duration: 0.55, ease: 'power2.in', immediateRender: false }, tp - 0.35 + i * 0.12);
+      tl.to('#yc' + i, { opacity: 0, duration: 0.05 }, tp + 0.2 + i * 0.12);
+      sfx('plink' + (i + 1), tp + 0.2 + i * 0.12, 0.6);
     });
-    /* Netzwerk auf der Karte */
-    tl.fromTo('#net', { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.8, ease: 'expo.out', immediateRender: true }, t + 0.3);
-    Object.keys(CITY).forEach(function (k, i) { pop('#np' + i, t + 0.5 + i * 0.07, { dur: 0.4 }); });
-    NET_PAIRS.forEach(function (pr, i) {
-      var ts = t + 0.9 + i * 0.36;
-      tl.fromTo('#na' + i, { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: 0.7, ease: 'power2.inOut' }, ts);
-      tl.fromTo('#nc' + i, { opacity: 0 }, { opacity: 1, duration: 0.1 }, ts);
-      tl.to('#nc' + i, { motionPath: { path: arc(CITY[pr[0]], CITY[pr[1]], 0.3) }, duration: 0.7, ease: 'power2.inOut' }, ts);
-      tl.to('#nc' + i, { opacity: 0, scale: 0.4, duration: 0.2 }, ts + 0.7);
-      tl.to('#na' + i, { drawSVG: '100% 100%', duration: 0.5, ease: 'power2.in' }, ts + 0.8);
-    });
-    gsap.set('[id^=nc]', { opacity: 0 });
-    /* Mehr aus jedem Kunden */
-    var tm = at('So', 2) - 0.1;
-    ['r1', 'r2', 'r3'].forEach(function (r, i) { tl.to('#' + r, { x: -900, opacity: 0, duration: 0.5, ease: 'power3.in' }, tm - 0.4 + i * 0.05); });
-    sfx('whoosh', tm - 0.35, 0.5);
-    capIn('capMehr', tm + 0.1, 0.1);
-    tl.fromTo(CAPS.capMehr.querySelectorAll('.hl'), { '--hl': 0 }, { '--hl': 1, duration: 0.5, ease: 'power2.inOut', stagger: 0.12 }, at('jedem') + 0.1);
+    tl.to('#chipBel', { opacity: 0, duration: 0.3 }, tp + 0.2);
+    /* Rendite steigt */
+    var tr = at('Rendite');
+    capIn('capRendite', at('steigt') - 0.1);
+    tl.set('#yArrow', { opacity: 1 }, tr - 0.2);
+    tl.fromTo('#yArrow', { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.6, ease: 'power2.inOut', immediateRender: false }, tr - 0.2);
+    tl.fromTo('#yHead', { opacity: 0, scale: 0.4, transformOrigin: '0% 50%' }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(3)' }, tr + 0.35);
+    sfx('whoosh', tr - 0.2, 0.4); sfx('ding', tr + 0.35, 0.55);
+    G.point(BR, tr - 0.3, 20);
+    tl.to(BR.p, { mood: 1, brow: 0.6, duration: 0.01 }, tr);
+    G.rest(BR, tr + 1.2, 0.5);
+    G.nod(BR, tr + 1.4, 2);
   })();
 
-  /* ---------- Szene 9: Abschluss ---------- */
+  /* ---------- Szene 9: Für die Kunden: von Stadt zu Stadt ---------- */
+  (function () {
+    var t = at('und', 5) - 0.5;
+    capOut('capRendite', t - 0.3);
+    show('#L-route', t);
+    tl.fromTo('#L-route', { y: 1080 }, { y: 0, duration: 0.65, ease: 'expo.inOut' }, t);
+    tl.to('#L-yield', { y: -1080, duration: 0.65, ease: 'expo.inOut' }, t);
+    hideAt('#L-yield', t + 0.65);
+    sfx('whoosh', t + 0.05, 0.7);
+    tl.to(WR.p, { mood: 1, brow: 0.4, lookX: 4, duration: 0.01 }, t);
+    G.nod(WR, at('Einfachste') - 0.1, 1);
+    /* Route: von Stadt zu Stadt weiterempfohlen */
+    pop('#rs0', t + 0.6, { origin: '50% 100%' });
+    capIn('capStadt', at('Stadt', 1) - 0.2);
+    var hops = [at('Stadt', 1) - 0.1, at('Stadt', 2) - 0.05, at('weiterempfohlen') + 0.1, at('weiterempfohlen') + 0.62];
+    gsap.set('#rVanW', { x: CITY.magdeburg[0], y: CITY.magdeburg[1] - 30 });
+    gsap.set(['#rs1', '#rs2', '#rs3', '#rs4'], { opacity: 0 });
+    tl.to('#rVan', { opacity: 1, duration: 0.2 }, hops[0] - 0.2);
+    hops.forEach(function (th, i) {
+      var a = CITY[ROUTE[i]], b = CITY[ROUTE[i + 1]];
+      var p = arc([a[0], a[1] - 30], [b[0], b[1] - 30], -0.3);
+      tl.fromTo('#ra' + i, { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.5, ease: 'power2.inOut' }, th);
+      tl.to('#rVanW', { motionPath: { path: p }, duration: 0.5, ease: 'power2.inOut' }, th);
+      tl.set('#rVan', { scaleX: b[0] < a[0] ? -1 : 1 }, th);
+      pop('#rs' + (i + 1), th + 0.45, { origin: '50% 100%' }); sfx('pop', th + 0.45, 0.4);
+      sfx('whoosh', th, 0.25);
+    });
+    /* Ohne Stress: entspannt, Hände hinter dem Kopf */
+    var to = at('ohne', 2);
+    capOut('capStadt', to - 0.4);
+    capIn('capStress', to);
+    tl.to(WR.p, { armFu: 8, armFl: 88, handF: 10, armBu: -8, armBl: -92, handB: -10, lean: -2.5, headRot: -5, mood: 1, brow: 0.3, duration: 0.5, ease: 'power2.inOut' }, to - 0.1);
+    tl.to(WR.p, { blink: 0.15, duration: 0.15 }, at('Stress') + 0.1);
+    tl.to(WR.p, { blink: 1, duration: 0.2 }, at('Anbieter') - 0.2);
+  })();
+
+  /* ---------- Szene 10: Win-win-win ---------- */
+  (function () {
+    var t = at('eine', 4) - 0.75;
+    wipeAt(t);
+    var sw = t + 0.45;
+    capOut('capStress', sw - 0.3);
+    hideAt('#L-route', sw);
+    show('#L-trio', sw);
+    G.enter(B3, sw + 0.1); G.enter(K3, sw + 0.2); G.enter(W3, sw + 0.3);
+    gsap.set(['#tl0', '#tl1', '#tl2', '#tc0', '#tc1', '#tc2'], { opacity: 0 });
+    capIn('capWin', at('echte') - 0.05, 0.12);
+    var tw = at('win-win-win-situation');
+    [B3, K3, W3].forEach(function (c, i) {
+      var ti = tw + i * 0.28;
+      pop('#tc' + i, ti, { rot: -60, dur: 0.5 }); sfx('plink' + (i + 1), ti, 0.8);
+      tl.to(c.p, { mood: 1, brow: 0.5, duration: 0.01 }, ti);
+    });
+    [[B3, at('Sie', 4)], [K3, at('Kollegen')], [W3, at('Kunden', 4)]].forEach(function (v, i) {
+      pop('#tl' + i, v[1] - 0.1, { from: 0.5 }); sfx('pop', v[1] - 0.1, 0.5);
+      G.wave(v[0], v[1] - 0.2, 1);
+    });
+    capOut('capWin', at('Monteurzimmerblick', 2) - 1.3);
+  })();
+
+  /* ---------- Szene 11: Abschluss ---------- */
   var URL_TXT = 'monteurzimmerblick.de';
   (function () {
     var t = at('Monteurzimmerblick', 2) - 0.8;
@@ -930,8 +973,7 @@
     tl.fromTo('#coverSq', { scale: 0, rotation: -90, borderRadius: '20px' }, { scale: 24, rotation: 0, borderRadius: '4px', duration: 0.5, ease: 'power3.in' }, t);
     sfx('whoosh', t, 0.8);
     var ts = t + 0.5;
-    capOut('capMehr', ts - 0.5);
-    hideAt('#L-recap', ts);
+    hideAt('#L-trio', ts);
     show('#L-cta', ts);
     /* Zeichen schrumpft auf seinen Platz im Logo */
     tl.to('#coverSq', { scale: 1.46, x: function () { return MARK.x + 73 - 960; }, y: function () { return MARK.y + 73 - 540; }, borderRadius: '20px', duration: 0.55, ease: 'expo.out' }, ts);
@@ -943,8 +985,8 @@
     sfx('pop', ts + 0.5, 0.7);
     tl.fromTo('#wordClipR', { attr: { width: 0 } }, { attr: { width: 1400 }, duration: 0.8, ease: 'expo.inOut' }, ts + 0.55);
     tl.fromTo('#word', { x: -80 }, { x: 0, duration: 0.8, ease: 'expo.out' }, ts + 0.55);
-    popChar(BC, ts + 0.9); popChar(WC, ts + 1.0);
-    wave(BC, ts + 1.3, 2, 'F'); wave(WC, ts + 1.4, 2, 'F');
+    G.enter(BC, ts + 0.9); G.enter(KC, ts + 1.0);
+    G.wave(BC, ts + 1.3, 2); G.wave(KC, ts + 1.4, 2);
     var tb = at('kostenlos');
     pop('#ctaBtn', tb - 0.25, { from: 0.5 }); sfx('pop', tb - 0.25, 0.8);
     var tc = at('starten') + 0.25;
@@ -952,7 +994,8 @@
     var tu = at('auf') + 0.05, n = URL_TXT.length, dt = 1.3 / n;
     T.url = tu; T.urlDt = dt;
     for (var i = 1; i <= n; i += 2) sfx('type', tu + i * dt, 0.3);
-    wave(WC, DURATION - 3.2, 2, 'F'); wave(BC, DURATION - 3.0, 2, 'F');
+    tl.to([BC.p, KC.p], { mood: 1, brow: 0.4, duration: 0.01 }, tc);
+    G.wave(KC, DURATION - 3.4, 2); G.wave(BC, DURATION - 3.2, 2);
     tl.to({}, { duration: 0.01 }, DURATION);
   })();
 
@@ -965,6 +1008,8 @@
     word.setAttribute('x', x0 + mark + gap);
     $('wordClipR').setAttribute('x', x0 + mark + gap - 20);
   }
+
+  /* ================= Rendern ================= */
   var GLASS = ['#win1', '#win2', '#win3', '#win4'].map(function (w) { return q(w + ' .glass'); });
   var lastUrl = -1;
   function states(t) {
@@ -972,7 +1017,7 @@
     for (var i = 0; i < 4; i++) {
       var f = Y;
       if (t >= T.flash && t < T.flash + 0.2 + i * 0.07) f = WH;
-      if (t >= T.flip && t < T.light + i * 0.16) f = G3;
+      if (t >= T.flip && t < T.light + i * 0.15) f = G3;
       GLASS[i].setAttribute('fill', f);
     }
     $('boardTxt').textContent = (t >= T.flip && t < T.boardBack) ? 'ZIMMER FREI' : 'MONTEURZIMMER';
@@ -984,19 +1029,15 @@
     $('caret').setAttribute('opacity', on ? 1 : 0);
   }
 
-  /* ================= Rendern ================= */
   var viewport = $('viewport'), stage = $('stage');
-  function fit() {
-    var s = viewport.clientWidth / 1920;
-    stage.style.transform = 'scale(' + s + ')';
-  }
+  function fit() { stage.style.transform = 'scale(' + (viewport.clientWidth / 1920) + ')'; }
   window.addEventListener('resize', fit);
   fit();
 
   function render(t) {
     t = Math.max(0, Math.min(DURATION, t));
     tl.seek(t, true);
-    for (var i = 0; i < CHARS.length; i++) drawChar(CHARS[i], t);
+    F.draw(t);
     states(t);
     return t;
   }
