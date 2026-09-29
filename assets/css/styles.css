@@ -190,9 +190,24 @@ strong, b { font-weight: 600; }
 .video-overlay.hidden { display: none; }
 .video-note { position: absolute; inset: auto 16px 16px; z-index: 3; background: rgba(14, 14, 13, .88); color: #fff; padding: 12px 16px; border-radius: var(--r-sm); font-size: .92rem; display: none; }
 .video-note.show { display: block; }
+/* Mobil und Tablet: Video direkt unter der Überschrift, damit es ohne Scrollen sichtbar ist */
 @media (max-width: 900px) {
-  .hero-grid { grid-template-columns: 1fr; }
-  .hero .lead { max-width: none; }
+  .hero { padding-block: 28px 56px; }
+  .hero-grid { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .hero-text { display: contents; }
+  .hero .pill { order: 1; align-self: flex-start; }
+  .hero h1 { order: 2; margin-top: 16px; }
+  .hero-visual { order: 3; margin-top: 24px; }
+  .hero .lead { order: 4; margin-top: 28px; max-width: none; }
+  .hero-actions { order: 5; margin-top: 24px; }
+}
+@media (max-width: 520px) {
+  .hero { padding-top: 20px; }
+  .hero h1 { margin-top: 12px; }
+  .hero-visual { margin-top: 20px; }
+  .video-bar { padding: 9px 12px; }
+  .video-overlay .play { width: 68px; height: 68px; box-shadow: 0 0 0 10px rgba(255, 255, 255, .45), 0 16px 32px -10px rgba(14, 14, 13, .5); }
+  .video-overlay .play svg { width: 24px; height: 24px; }
 }
 
 /* ---------- Ticker ---------- */
